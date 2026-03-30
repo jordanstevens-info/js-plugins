@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<script>document.write('<link rel="stylesheet" href="canvas.css?t=' + Date.now() + '">')</script>
+<style>
+  /* All base styles are in canvas.css — add page-specific overrides here */
+</style>
+</head>
+<body>
+
+<!-- Title bar -->
+<div id="titlebar">
+  <div id="titlebar-left">
+    <svg id="titlebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 13V7.5C21 6.30653 21.0001 4.68198 21.0001 3C19.318 3 17.6935 3 16.5 3H7.5C6.30653 3 4.31805 3 3 3C3.00013 4.18198 3 6.30653 3 7.5V16.5C3 17.6935 3 19.318 3 21C4.68198 21 6.30653 21 7.5 21H13" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M3 9H21" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M6.4998 7.1998C7.16255 7.1998 7.6998 6.66255 7.6998 5.9998C7.6998 5.33706 7.16255 4.7998 6.4998 4.7998C5.83706 4.7998 5.2998 5.33706 5.2998 5.9998C5.2998 6.66255 5.83706 7.1998 6.4998 7.1998Z" fill="currentColor"/>
+      <path d="M15 12V20.5L17.5 18L19.5 21.5L21 20.5L19 17L22 16.5L15 12Z" fill="currentColor"/>
+    </svg>
+    <span id="titlebar-title">Live Canvas</span>
+    <div class="status-dot"></div>
+    <div id="canvas-switcher" onclick="toggleCanvasDropdown()">
+      <span id="titlebar-subtitle">Live Canvas</span>
+      <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+    </div>
+  </div>
+  <div id="titlebar-right">
+    <button class="titlebar-btn" id="add-btn" onclick="toggleAddDropdown()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Add
+    </button>
+    <button class="titlebar-btn" id="prompt-btn" onclick="togglePromptPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Prompt
+    </button>
+    <button class="titlebar-btn" id="clip-btn" onclick="toggleClipMode()" title="Clip region (Esc to cancel)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>
+      Clip
+    </button>
+  </div>
+</div>
+
+<!-- Prompt panel (hidden by default) -->
+<div id="prompt-panel" style="display:none">
+  <div class="bf-header">
+    <span class="bf-title">Canvas Prompt</span>
+    <button class="bf-close" onclick="togglePromptPanel()" title="Close">&times;</button>
+  </div>
+  <div class="bf-field">
+    <label for="prompt-desc">What do you want to do?</label>
+    <textarea id="prompt-desc" placeholder="Describe what you want — add a branch, create viewports, tweak tokens, add file nodes…"></textarea>
+  </div>
+  <button class="bf-copy-btn" onclick="copyCanvasPrompt()">Copy Prompt</button>
+</div>
+
+<!-- Add dropdown -->
+<div id="add-dropdown">
+  <button class="dropdown-option" onclick="closeAddDropdown();addFileNode()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Filepath <span class="shortcut-hint">P</span>
+  </button>
+  <button class="dropdown-option" onclick="closeAddDropdown();addFrame()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Frame <span class="shortcut-hint">F</span>
+  </button>
+  <button class="dropdown-option" onclick="closeAddDropdown();toggleMarkerMode()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    Marker <span class="shortcut-hint">M</span>
+  </button>
+  <button class="dropdown-option" onclick="closeAddDropdown();toggleNoteMode()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z"/><path d="M14 3v6h6"/></svg>
+    Note <span class="shortcut-hint">N</span>
+  </button>
+  <button class="dropdown-option" onclick="closeAddDropdown();addUrl()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+    URL / Embed <span class="shortcut-hint">U</span>
+  </button>
+</div>
+
+<!-- Copy toast -->
+<div id="copy-toast">Copied!</div>
+
+<!-- Server banner -->
+<div id="server-banner">
+  <span>Canvas server not running — persistence disabled. Run:</span>
+  <code id="server-cmd">python3 serve.py</code>
+  <button onclick="copyServerCmd()">Copy command</button>
+  <span>then open</span>
+  <a href="http://localhost:8888/live-canvas.html">localhost:8888/live-canvas.html</a>
+  <button class="banner-dismiss" onclick="dismissBanner()">&times;</button>
+</div>
+
+<!-- Hint -->
+<div id="hint">Scroll to zoom · Click + drag to pan · Double-click to fit</div>
+
+<!-- Canvas -->
+<div id="canvas"></div>
+
+<!-- Popover (shared for name/dims editing) -->
+<div id="popover"></div>
+
+<!-- Canvas switcher dropdown -->
+<div id="canvas-dropdown"></div>
+
+<!-- Clip selection overlay -->
+<div id="clip-selection"></div>
+
+<!-- Minimap -->
+<div id="minimap"></div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+  <button class="tb-btn" onclick="zoomTo(scale - 0.1)" title="Zoom out">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+  </button>
+  <div id="zoom-display" onclick="zoomTo(1)" title="Reset to 100%">100%</div>
+  <button class="tb-btn" onclick="zoomTo(scale + 0.1)" title="Zoom in">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="fitAll()" title="Fit all artboards">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 3H3v6M15 21h6v-6M9 21H3v-6"/><path d="M21 3l-7 7M3 3l7 7M21 21l-7-7M3 21l7-7"/></svg>
+  </button>
+</div>
+
+<script>
+// ── State ───────────────────────────────────
+let scale = 0.45;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+
+// Drag state
+let isDragging = false;
+let dragTarget = null;
+let dragKey = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+const positions = {};
+
+// Note state
+let noteMode = false;
+const notes = [];
+let noteIdCounter = 0;
+
+// Standalone frames (Port/URL)
+const frames = [];
+let frameIdCounter = 0;
+function generateFrameId() { return `frame-${Date.now()}-${frameIdCounter++}`; }
+
+// Design nodes
+const designNodes = [];
+
+// Callout markers
+const markers = [];
+let markerIdCounter = 0;
+function generateMarkerId() { return `marker-${Date.now()}-${markerIdCounter++}`; }
+
+// File nodes
+const fileNodes = [];
+let fileNodeIdCounter = 0;
+function generateFileNodeId() { return `file-${Date.now()}-${fileNodeIdCounter++}`; }
+
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp']);
+const VIDEO_EXTS = new Set(['.mov', '.mp4', '.webm', '.ogg', '.m4v', '.avi']);
+const AUDIO_EXTS = new Set(['.mp3', '.wav', '.aac', '.m4a', '.flac']);
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const canvas = document.getElementById('canvas');
+const zoomDisplay = document.getElementById('zoom-display');
+const minimap = document.getElementById('minimap');
+const hint = document.getElementById('hint');
+const addDropdown = document.getElementById('add-dropdown');
+
+setTimeout(() => hint.classList.add('hidden'), 4000);
+
+// ── Git branch icon SVG ─────────────────────
+const branchIconSvg = `<svg class="branch-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>`;
+
+// ── Branch / artboard data model ────────────
+const SCREEN_GAP = 100;
+const BRANCH_GAP = 200;
+const BRANCH_LABEL_HEIGHT = 125;
+
+const defaultScreens = [
+  { name: 'Desktop',  route: '/', width: 1440, height: 900 },
+  { name: 'Tablet',   route: '/', width: 768,  height: 1024 },
+  { name: 'Mobile',   route: '/', width: 390,  height: 844 },
+];
+
+const branches = [
+  {
+    branch: 'main',
+    port: 3000,
+    screens: defaultScreens.map(s => ({ ...s })),
+  },
+];
+
+// ── Helpers ──────────────────────────────────
+function screenToCanvas(sx, sy) {
+  return { x: (sx - panX) / scale, y: (sy - panY) / scale };
+}
+
+function generateNoteId() {
+  return `note-${Date.now()}-${noteIdCounter++}`;
+}
+
+// ── Layout calculation ──────────────────────
+function computeLayout() {
+  const items = [];
+  let currentY = 0;
+
+  branches.forEach((branch, bIdx) => {
+    items.push({
+      type: 'label',
+      branch: branch.branch,
+      port: branch.port,
+      x: 0,
+      y: currentY,
+      branchIdx: bIdx,
+    });
+
+    currentY += BRANCH_LABEL_HEIGHT;
+
+    let currentX = 0;
+    let maxHeight = 0;
+
+    branch.screens.forEach((screen, sIdx) => {
+      items.push({
+        type: 'artboard',
+        name: screen.name,
+        url: `http://localhost:${branch.port}${screen.route}`,
+        width: screen.width,
+        height: screen.height,
+        x: currentX,
+        y: currentY,
+        branch: branch.branch,
+        port: branch.port,
+        route: screen.route,
+        branchIdx: bIdx,
+        screenIdx: sIdx,
+      });
+      currentX += screen.width + SCREEN_GAP;
+      if (screen.height > maxHeight) maxHeight = screen.height;
+    });
+
+    currentY += maxHeight + BRANCH_GAP;
+  });
+
+  return items;
+}
+
+// ── Render ──────────────────────────────────
+function render() {
+  const items = computeLayout();
+
+  // ── Reconcile branch items ──
+  // Labels: remove and recreate (cheap, no iframes).
+  // Artboards: update in place to preserve iframes and avoid reload flash.
+  canvas.querySelectorAll('.branch-label').forEach(el => el.remove());
+  const activeArtboardKeys = new Set();
+
+  items.forEach(item => {
+    const key = item.type === 'label'
+      ? `label-${item.branchIdx}`
+      : `artboard-${item.branchIdx}-${item.screenIdx}`;
+
+    if (positions[key]) {
+      item.x = positions[key].x;
+      item.y = positions[key].y;
+    }
+
+    if (item.type === 'label') {
+      const el = document.createElement('div');
+      el.className = 'branch-label';
+      el.dataset.dragKey = key;
+      el.style.left = item.x + 'px';
+      el.style.top = item.y + 'px';
+      el.innerHTML = `
+        <span class="drag-grip" data-drag-handle>⠿</span>
+        <div class="branch-pill">
+          ${branchIconSvg}
+          <span class="branch-pill-name">${item.branch}</span>
+        </div>
+        <div class="branch-dot"></div>
+        <span class="branch-port">:${item.port}</span>
+      `;
+      canvas.appendChild(el);
+    } else {
+      activeArtboardKeys.add(key);
+      let el = canvas.querySelector(`[data-drag-key="${key}"]`);
+
+      if (el) {
+        // Existing artboard — update position + labels, preserve iframe
+        el.style.left = item.x + 'px';
+        el.style.top = item.y + 'px';
+        // Regenerate label bar (onclick handlers carry index refs that may shift)
+        const labelEl = el.querySelector('.artboard-label');
+        if (labelEl) {
+          labelEl.innerHTML = `
+            <span class="drag-grip" data-drag-handle>⠿</span>
+            <span class="artboard-name clickable" data-pop="name" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.name}</span>
+            <span class="artboard-route clickable" data-pop="route" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.route}</span>
+            <span class="artboard-dims clickable" data-pop="dims" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.width} × ${item.height}</span>
+            <button class="open-tab-btn" onclick="event.stopPropagation();window.open('${item.url}','_blank')" title="Open in new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+            <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('artboard','${item.branchIdx}',${item.screenIdx})" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+            <button class="node-delete" onclick="deleteArtboard(${item.branchIdx},${item.screenIdx})" title="Remove frame"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          `;
+        }
+        // Update iframe dimensions (preserve the element itself to avoid reload)
+        const frameContainer = el.querySelector('.artboard-frame');
+        if (frameContainer) {
+          frameContainer.style.width = item.width + 'px';
+          frameContainer.style.height = item.height + 'px';
+          const iframe = frameContainer.querySelector('iframe');
+          if (iframe) {
+            if (iframe.getAttribute('src') !== item.url) iframe.src = item.url;
+            iframe.width = item.width;
+            iframe.height = item.height;
+          }
+        }
+      } else {
+        // New artboard — create from scratch
+        el = document.createElement('div');
+        el.className = 'artboard';
+        el.dataset.dragKey = key;
+        el.style.left = item.x + 'px';
+        el.style.top = item.y + 'px';
+        el.innerHTML = `
+          <div class="artboard-label">
+            <span class="drag-grip" data-drag-handle>⠿</span>
+            <span class="artboard-name clickable" data-pop="name" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.name}</span>
+            <span class="artboard-route clickable" data-pop="route" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.route}</span>
+            <span class="artboard-dims clickable" data-pop="dims" data-b="${item.branchIdx}" data-s="${item.screenIdx}">${item.width} × ${item.height}</span>
+            <button class="open-tab-btn" onclick="event.stopPropagation();window.open('${item.url}','_blank')" title="Open in new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+            <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('artboard','${item.branchIdx}',${item.screenIdx})" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+            <button class="node-delete" onclick="deleteArtboard(${item.branchIdx},${item.screenIdx})" title="Remove frame"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          </div>
+          <div class="artboard-frame" style="width:${item.width}px;height:${item.height}px;">
+            <iframe
+              src="${item.url}"
+              width="${item.width}"
+              height="${item.height}"
+              loading="lazy"
+            ></iframe>
+          </div>
+        `;
+        canvas.appendChild(el);
+      }
+    }
+  });
+
+  // Remove orphaned artboards (e.g. a screen was deleted)
+  canvas.querySelectorAll('.artboard[data-drag-key]').forEach(el => {
+    if (!activeArtboardKeys.has(el.dataset.dragKey)) el.remove();
+  });
+
+  renderNotes();
+  renderMarkers();
+  renderDesignNodes();
+  reconcileFrames();
+  renderFileNodes();
+  updateTransform();
+  updateMinimap();
+}
+
+// ── Render notes ────────────────────────────
+function renderNotes() {
+  canvas.querySelectorAll('.note-wrapper').forEach(el => el.remove());
+  notes.forEach((note, idx) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'note-wrapper';
+    wrapper.dataset.dragKey = `note-${note.id}`;
+    wrapper.dataset.noteId = note.id;
+
+    const nx = positions[`note-${note.id}`]?.x ?? note.x;
+    const ny = positions[`note-${note.id}`]?.y ?? note.y;
+    wrapper.style.left = nx + 'px';
+    wrapper.style.top = ny + 'px';
+    wrapper.style.width = (note.width || 220) + 'px';
+    wrapper.innerHTML = `
+      <div class="note-label">
+        <span class="drag-grip" data-drag-handle>⠿</span>
+        <span class="note-dims clickable" data-pop="note-width" data-note-id="${note.id}">${note.width || 220}px</span>
+        <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('note','${note.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        <button class="node-delete" onclick="deleteNote('${note.id}')" title="Delete note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="sticky-note">
+        <div class="sticky-note-text" contenteditable="true">${note.text}</div>
+      </div>
+    `;
+
+    const textEl = wrapper.querySelector('.sticky-note-text');
+    textEl.addEventListener('input', () => {
+      note.text = textEl.innerHTML;
+      saveCanvas();
+    });
+
+    canvas.appendChild(wrapper);
+  });
+}
+
+// ── Render markers ──────────────────────────
+function renderMarkers() {
+  canvas.querySelectorAll('.marker-wrapper').forEach(el => el.remove());
+  markers.forEach(marker => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'marker-wrapper';
+    wrapper.dataset.dragKey = `marker-${marker.id}`;
+    wrapper.dataset.markerId = marker.id;
+
+    const mx = positions[`marker-${marker.id}`]?.x ?? marker.x;
+    const my = positions[`marker-${marker.id}`]?.y ?? marker.y;
+    wrapper.style.left = mx + 'px';
+    wrapper.style.top = my + 'px';
+
+    wrapper.innerHTML = `
+      <div class="marker-flag" data-drag-handle>
+        <span class="marker-text" contenteditable="true">${marker.text}</span>
+        <button class="marker-close" onclick="deleteMarker('${marker.id}')">&times;</button>
+      </div>
+    `;
+
+    const textEl = wrapper.querySelector('.marker-text');
+    textEl.addEventListener('input', () => {
+      marker.text = textEl.textContent;
+      saveCanvas();
+    });
+
+    canvas.appendChild(wrapper);
+  });
+}
+
+// ── Render design nodes ─────────────────────
+function renderDesignNodes() {
+  canvas.querySelectorAll('.design-node').forEach(el => el.remove());
+  designNodes.forEach(dn => {
+    const el = document.createElement('div');
+    el.className = 'design-node';
+    el.dataset.dragKey = `ds-${dn.id}`;
+    el.style.left = (positions[`ds-${dn.id}`]?.x ?? dn.x) + 'px';
+    el.style.top = (positions[`ds-${dn.id}`]?.y ?? dn.y) + 'px';
+
+    const hasChanges = Object.keys(dn.modifications || {}).length > 0;
+    let sectionsHTML = '';
+
+    if (dn.tokens.colors) {
+      let rows = '';
+      for (const [name, value] of Object.entries(dn.tokens.colors)) {
+        const current = (dn.modifications || {})[name] ?? value;
+        const modified = (dn.modifications || {})[name] !== undefined;
+        rows += `
+          <div class="token-row ${modified ? 'modified' : ''}">
+            <div class="token-swatch" style="background:${current}">
+              <input type="color" value="${current.startsWith('#') ? current : '#000000'}"
+                onchange="updateToken('${dn.id}','${name}',this.value,'${value}')" />
+            </div>
+            <span class="token-name">${name}</span>
+            <input type="text" class="token-input token-color-input" value="${current}"
+              onchange="updateToken('${dn.id}','${name}',this.value,'${value}')" />
+          </div>`;
+      }
+      sectionsHTML += `<div class="design-node-section">
+        <div class="design-node-section-title">Colors</div>${rows}</div>`;
+    }
+
+    if (dn.tokens.spacing) {
+      let rows = '';
+      for (const [name, value] of Object.entries(dn.tokens.spacing)) {
+        const current = (dn.modifications || {})[name] ?? value;
+        const modified = (dn.modifications || {})[name] !== undefined;
+        const numVal = parseInt(current) || 0;
+        const unit = (current.match(/[a-z%]+$/i) || ['px'])[0];
+        rows += `
+          <div class="token-row ${modified ? 'modified' : ''}">
+            <div class="token-spacing-bar" style="width:${Math.min(numVal * 2, 80)}px"></div>
+            <span class="token-name">${name}</span>
+            <div class="token-controls">
+              <input type="range" min="0" max="128" step="1" value="${numVal}"
+                oninput="updateTokenFromSlider('${dn.id}','${name}',this.value,'${unit}','${value}')" />
+              <input type="text" class="token-input" value="${current}"
+                onchange="updateToken('${dn.id}','${name}',this.value,'${value}')" />
+            </div>
+          </div>`;
+      }
+      sectionsHTML += `<div class="design-node-section">
+        <div class="design-node-section-title">Spacing</div>${rows}</div>`;
+    }
+
+    if (dn.tokens.typography) {
+      let rows = '';
+      for (const [name, value] of Object.entries(dn.tokens.typography)) {
+        const current = (dn.modifications || {})[name] ?? value;
+        const modified = (dn.modifications || {})[name] !== undefined;
+        const numVal = parseInt(current) || 14;
+        const unit = (current.match(/[a-z%]+$/i) || ['px'])[0];
+        rows += `
+          <div class="token-row ${modified ? 'modified' : ''}">
+            <span style="font-size:${Math.min(numVal, 28)}px;color:var(--text);line-height:1;">Aa</span>
+            <span class="token-name">${name}</span>
+            <div class="token-controls">
+              <input type="range" min="8" max="72" step="1" value="${numVal}"
+                oninput="updateTokenFromSlider('${dn.id}','${name}',this.value,'${unit}','${value}')" />
+              <input type="text" class="token-input" value="${current}"
+                onchange="updateToken('${dn.id}','${name}',this.value,'${value}')" />
+            </div>
+          </div>`;
+      }
+      sectionsHTML += `<div class="design-node-section">
+        <div class="design-node-section-title">Typography</div>${rows}</div>`;
+    }
+
+    if (dn.tokens.radius) {
+      let rows = '';
+      for (const [name, value] of Object.entries(dn.tokens.radius)) {
+        const current = (dn.modifications || {})[name] ?? value;
+        const modified = (dn.modifications || {})[name] !== undefined;
+        const numVal = parseInt(current) || 0;
+        const unit = (current.match(/[a-z%]+$/i) || ['px'])[0];
+        rows += `
+          <div class="token-row ${modified ? 'modified' : ''}">
+            <div class="token-radius-preview" style="border-radius:${current} 0 0 0"></div>
+            <span class="token-name">${name}</span>
+            <div class="token-controls">
+              <input type="range" min="0" max="48" step="1" value="${numVal}"
+                oninput="updateTokenFromSlider('${dn.id}','${name}',this.value,'${unit}','${value}')" />
+              <input type="text" class="token-input" value="${current}"
+                onchange="updateToken('${dn.id}','${name}',this.value,'${value}')" />
+            </div>
+          </div>`;
+      }
+      sectionsHTML += `<div class="design-node-section">
+        <div class="design-node-section-title">Border Radius</div>${rows}</div>`;
+    }
+
+    el.innerHTML = `
+      <div class="design-node-header" data-drag-handle>
+        <span class="design-node-title">Design Tokens</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="ghost-btn" onclick="saveTokenChanges('${dn.id}')"
+            ${hasChanges ? '' : 'disabled'}>Save</button>
+          <button class="ghost-btn" onclick="copyTokenChanges('${dn.id}')"
+            ${hasChanges ? '' : 'disabled'}>Prompt</button>
+          <button class="ghost-btn" onclick="resetTokens('${dn.id}')"
+            title="Re-read values from source file">Resync</button>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('design','${dn.id}')" title="Duplicate" style="padding:0;width:22px;height:22px;margin-left:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="design-node-close" onclick="deleteDesignNode('${dn.id}')"
+            title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+      </div>
+      ${sectionsHTML}
+    `;
+
+    canvas.appendChild(el);
+  });
+}
+
+// ── Render standalone frames ────────────────
+function reconcileFrames() {
+  const activeFrameKeys = new Set();
+  frames.forEach(frame => {
+    const key = `frame-${frame.id}`;
+    activeFrameKeys.add(key);
+    const x = (positions[key]?.x ?? frame.x);
+    const y = (positions[key]?.y ?? frame.y);
+
+    let el = canvas.querySelector(`[data-drag-key="${key}"]`);
+    if (el) {
+      // Existing frame — update position + labels, preserve iframe
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      const labelEl = el.querySelector('.frame-label');
+      if (labelEl) {
+        labelEl.innerHTML = `
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          <span class="frame-name clickable" data-pop="frame-name" data-frame-id="${frame.id}">${frame.label}</span>
+          <span class="artboard-dims clickable" data-pop="frame-dims" data-frame-id="${frame.id}">${frame.width} × ${frame.height}</span>
+          <button class="open-tab-btn" onclick="event.stopPropagation();window.open('${frame.url}','_blank')" title="Open in new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('frame','${frame.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="node-delete" onclick="deleteFrame('${frame.id}')" title="Remove frame"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        `;
+      }
+      const frameContainer = el.querySelector('.artboard-frame');
+      if (frameContainer) {
+        frameContainer.style.width = frame.width + 'px';
+        frameContainer.style.height = frame.height + 'px';
+        const iframe = frameContainer.querySelector('iframe');
+        if (iframe) {
+          if (iframe.getAttribute('src') !== frame.url) iframe.src = frame.url;
+          iframe.width = frame.width;
+          iframe.height = frame.height;
+        }
+      }
+    } else {
+      // New frame — create from scratch
+      el = document.createElement('div');
+      el.className = 'standalone-frame';
+      el.dataset.dragKey = key;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.innerHTML = `
+        <div class="frame-label">
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          <span class="frame-name clickable" data-pop="frame-name" data-frame-id="${frame.id}">${frame.label}</span>
+          <span class="artboard-dims clickable" data-pop="frame-dims" data-frame-id="${frame.id}">${frame.width} × ${frame.height}</span>
+          <button class="open-tab-btn" onclick="event.stopPropagation();window.open('${frame.url}','_blank')" title="Open in new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('frame','${frame.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="node-delete" onclick="deleteFrame('${frame.id}')" title="Remove frame"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="artboard-frame" style="width:${frame.width}px;height:${frame.height}px;">
+          <iframe src="${frame.url}" width="${frame.width}" height="${frame.height}" loading="lazy"${frame.allowfullscreen ? ' allowfullscreen' : ''}${frame.allow ? ` allow="${frame.allow}"` : ''}${frame.sandbox ? ` sandbox="${frame.sandbox}"` : ''}></iframe>
+        </div>
+      `;
+      canvas.appendChild(el);
+    }
+  });
+  // Remove orphaned standalone frames
+  canvas.querySelectorAll('.standalone-frame[data-drag-key]').forEach(el => {
+    if (!activeFrameKeys.has(el.dataset.dragKey)) el.remove();
+  });
+}
+
+// ── Render file nodes ──────────────────────
+function renderFileNodes() {
+  canvas.querySelectorAll('.file-node').forEach(el => el.remove());
+  fileNodes.forEach(fn => {
+    const key = `file-${fn.id}`;
+    const el = document.createElement('div');
+    el.className = 'file-node';
+    el.dataset.dragKey = key;
+    el.style.left = (positions[key]?.x ?? fn.x) + 'px';
+    el.style.top = (positions[key]?.y ?? fn.y) + 'px';
+    el.style.width = (fn.width || 500) + 'px';
+
+    if (fn.fileType === 'image') {
+      el.innerHTML = `
+        <div class="file-node-header" data-drag-handle>
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          <span class="file-node-filename clickable" title="${escapeHtml(fn.source)}" onclick="event.stopPropagation();changeFilePath('${fn.id}')">${escapeHtml(fn.label)}</span>
+          <span class="artboard-dims clickable" data-pop="file-dims" data-file-id="${fn.id}">${fn.width} × ${fn.height}</span>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('file','${fn.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="file-node-close" onclick="deleteFileNode('${fn.id}')" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="file-image" style="height:${(fn.height || 300) - 42}px;">
+          <img src="/api/file?path=${encodeURIComponent(fn.source)}" alt="${escapeHtml(fn.label)}"
+               onerror="onFileImageError(this,'${fn.id}')" />
+          <div class="file-error"></div>
+        </div>
+      `;
+    } else if (fn.fileType === 'video') {
+      el.innerHTML = `
+        <div class="file-node-header" data-drag-handle>
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          <span class="file-node-filename clickable" title="${escapeHtml(fn.source)}" onclick="event.stopPropagation();changeFilePath('${fn.id}')">${escapeHtml(fn.label)}</span>
+          <span class="artboard-dims clickable" data-pop="file-dims" data-file-id="${fn.id}">${fn.width} × ${fn.height}</span>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('file','${fn.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="file-node-close" onclick="deleteFileNode('${fn.id}')" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="file-video" style="height:${(fn.height || 350) - 42}px;">
+          <video src="/api/file?path=${encodeURIComponent(fn.source)}" controls preload="metadata"></video>
+        </div>
+      `;
+    } else if (fn.fileType === 'audio') {
+      el.innerHTML = `
+        <div class="file-node-header" data-drag-handle>
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          <span class="file-node-filename clickable" title="${escapeHtml(fn.source)}" onclick="event.stopPropagation();changeFilePath('${fn.id}')">${escapeHtml(fn.label)}</span>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('file','${fn.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="file-node-close" onclick="deleteFileNode('${fn.id}')" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="file-audio">
+          <audio src="/api/file?path=${encodeURIComponent(fn.source)}" controls preload="metadata"></audio>
+        </div>
+      `;
+    } else {
+      const isModified = fn.content !== fn.originalContent;
+      el.innerHTML = `
+        <div class="file-node-header" data-drag-handle>
+          <span class="drag-grip" data-drag-handle>⠿</span>
+          ${isModified ? '<span class="file-modified-dot"></span>' : ''}
+          <span class="file-node-filename clickable" title="${escapeHtml(fn.source)}" onclick="event.stopPropagation();changeFilePath('${fn.id}')">${escapeHtml(fn.label)}</span>
+          <span class="artboard-dims clickable" data-pop="file-dims" data-file-id="${fn.id}">${fn.width} × ${fn.height}</span>
+          <button class="ghost-btn" onclick="saveFileContent('${fn.id}')" ${isModified ? '' : 'disabled'}>Save</button>
+          <button class="ghost-btn" onclick="resyncFileContent('${fn.id}')">Resync</button>
+          <button class="duplicate-btn" onclick="event.stopPropagation();duplicateNode('file','${fn.id}')" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          <button class="file-node-close" onclick="deleteFileNode('${fn.id}')" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <textarea class="file-editor" style="height:${(fn.height || 400) - 42}px;" data-file-node-id="${fn.id}" spellcheck="false">${escapeHtml(fn.content || '')}</textarea>
+      `;
+
+      // Attach textarea event listeners after insertion
+      const textarea = el.querySelector('.file-editor');
+      textarea.addEventListener('input', () => onFileEditorInput(fn.id, textarea));
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.substring(0, start) + '  ' + textarea.value.substring(end);
+          textarea.selectionStart = textarea.selectionEnd = start + 2;
+          onFileEditorInput(fn.id, textarea);
+        }
+      });
+    }
+
+    canvas.appendChild(el);
+  });
+}
+
+function onFileImageError(imgEl, nodeId) {
+  imgEl.style.display = 'none';
+  const errorDiv = imgEl.parentElement.querySelector('.file-error');
+  if (!errorDiv) return;
+  const fn = fileNodes.find(n => n.id === nodeId);
+  if (!fn) return;
+  errorDiv.style.display = 'block';
+  fetch('/api/file?path=' + encodeURIComponent(fn.source))
+    .then(r => r.json())
+    .then(d => {
+      errorDiv.textContent = d.error || 'Failed to load image';
+      if (d.hint) errorDiv.textContent += '\n' + d.hint;
+    })
+    .catch(() => {
+      errorDiv.textContent = 'Failed to load image';
+    });
+}
+
+function onFileEditorInput(nodeId, textarea) {
+  const fn = fileNodes.find(n => n.id === nodeId);
+  if (!fn) return;
+  fn.content = textarea.value;
+
+  // Surgical DOM update: toggle modified dot and save button without re-rendering
+  const fileNodeEl = textarea.closest('.file-node');
+  if (fileNodeEl) {
+    const isModified = fn.content !== fn.originalContent;
+    const header = fileNodeEl.querySelector('.file-node-header');
+    const existingDot = header.querySelector('.file-modified-dot');
+    const saveBtn = header.querySelector('.ghost-btn');
+
+    if (isModified && !existingDot) {
+      const dot = document.createElement('span');
+      dot.className = 'file-modified-dot';
+      const filenameEl = header.querySelector('.file-node-filename');
+      filenameEl.insertAdjacentElement('beforebegin', dot);
+    } else if (!isModified && existingDot) {
+      existingDot.remove();
+    }
+
+    if (saveBtn) saveBtn.disabled = !isModified;
+  }
+
+  saveCanvas();
+}
+
+function cleanPath(raw) {
+  return raw.trim().replace(/^['"]/, '').replace(/['"]$/, '');
+}
+
+async function addFileNode() {
+  const raw = prompt(
+    'Absolute file path:\n\n' +
+    'Tip: Cmd+Option+C copies the full path in Finder.\n' +
+    'If images fail to load, grant Full Disk Access\nto your terminal in System Settings > Privacy & Security.'
+  );
+  if (!raw) return;
+  const filePath = cleanPath(raw);
+
+  const ext = '.' + filePath.split('.').pop().toLowerCase();
+  const label = filePath.split('/').pop();
+  const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2);
+
+  if (IMAGE_EXTS.has(ext)) {
+    fileNodes.push({
+      id: generateFileNodeId(),
+      x: center.x - 250, y: center.y - 150,
+      source: filePath, label,
+      fileType: 'image',
+      width: 500, height: 400,
+      content: null, originalContent: null,
+    });
+    render();
+    saveCanvas();
+  } else if (VIDEO_EXTS.has(ext)) {
+    fileNodes.push({
+      id: generateFileNodeId(),
+      x: center.x - 250, y: center.y - 175,
+      source: filePath, label,
+      fileType: 'video',
+      width: 500, height: 350,
+      content: null, originalContent: null,
+    });
+    render();
+    saveCanvas();
+  } else if (AUDIO_EXTS.has(ext)) {
+    fileNodes.push({
+      id: generateFileNodeId(),
+      x: center.x - 200, y: center.y - 50,
+      source: filePath, label,
+      fileType: 'audio',
+      width: 400, height: 100,
+      content: null, originalContent: null,
+    });
+    render();
+    saveCanvas();
+  } else {
+    try {
+      const res = await fetch('/api/file/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: filePath }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showClipToast(data.error || 'Failed to read file', true);
+        return;
+      }
+      fileNodes.push({
+        id: generateFileNodeId(),
+        x: center.x - 250, y: center.y - 200,
+        source: filePath, label,
+        fileType: 'text',
+        width: 500, height: 900,
+        content: data.content, originalContent: data.content,
+      });
+      render();
+      saveCanvas();
+    } catch (err) {
+      showClipToast('Failed to read file — server error', true);
+    }
+  }
+}
+
+async function saveFileContent(nodeId) {
+  const fn = fileNodes.find(n => n.id === nodeId);
+  if (!fn || fn.fileType !== 'text') return;
+
+  try {
+    const res = await fetch('/api/file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: fn.source, content: fn.content }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showClipToast(data.error || 'Save failed', true);
+      return;
+    }
+    fn.originalContent = fn.content;
+    renderFileNodes();
+    saveCanvas();
+    showClipToast('File saved');
+
+    // Reload artboard iframes after hot reload delay
+    setTimeout(() => {
+      document.querySelectorAll('.artboard-frame iframe').forEach(f => { f.src = f.src; });
+    }, 600);
+  } catch (err) {
+    showClipToast('Save failed — server error', true);
+  }
+}
+
+async function resyncFileContent(nodeId) {
+  const fn = fileNodes.find(n => n.id === nodeId);
+  if (!fn || fn.fileType !== 'text') return;
+
+  try {
+    const res = await fetch('/api/file/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: fn.source }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showClipToast(data.error || 'Resync failed', true);
+      return;
+    }
+    fn.content = data.content;
+    fn.originalContent = data.content;
+    renderFileNodes();
+    saveCanvas();
+    showClipToast('Resynced from disk');
+  } catch (err) {
+    showClipToast('Resync failed — server error', true);
+  }
+}
+
+async function changeFilePath(nodeId) {
+  const fn = fileNodes.find(n => n.id === nodeId);
+  if (!fn) return;
+
+  const rawPath = prompt(
+    'New file path:\n\n' +
+    'Tip: Cmd+Option+C copies the full path in Finder.',
+    fn.source
+  );
+  if (!rawPath) return;
+  const newPath = cleanPath(rawPath);
+  if (newPath === fn.source) return;
+
+  const ext = '.' + newPath.split('.').pop().toLowerCase();
+  const newLabel = newPath.split('/').pop();
+  const isImage = IMAGE_EXTS.has(ext);
+  const isVideo = VIDEO_EXTS.has(ext);
+  const isAudio = AUDIO_EXTS.has(ext);
+
+  if (isImage || isVideo || isAudio) {
+    fn.source = newPath;
+    fn.label = newLabel;
+    fn.fileType = isImage ? 'image' : isVideo ? 'video' : 'audio';
+    fn.content = null;
+    fn.originalContent = null;
+    renderFileNodes();
+    saveCanvas();
+  } else {
+    try {
+      const res = await fetch('/api/file/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: newPath }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showClipToast(data.error || 'Failed to read file', true);
+        return;
+      }
+      fn.source = newPath;
+      fn.label = newLabel;
+      fn.fileType = 'text';
+      fn.content = data.content;
+      fn.originalContent = data.content;
+      renderFileNodes();
+      saveCanvas();
+    } catch (err) {
+      showClipToast('Failed to read file — server error', true);
+    }
+  }
+}
+
+function deleteFileNode(nodeId) {
+  if (!confirm('Remove this file?')) return;
+  const idx = fileNodes.findIndex(n => n.id === nodeId);
+  if (idx !== -1) {
+    fileNodes.splice(idx, 1);
+    delete positions[`file-${nodeId}`];
+    render();
+    saveCanvas();
+  }
+}
+
+// ── Prompt panel ─────────────────────────────
+const promptPanel = document.getElementById('prompt-panel');
+const copyToast = document.getElementById('copy-toast');
+
+function togglePromptPanel() {
+  const isHidden = promptPanel.style.display === 'none';
+  promptPanel.style.display = isHidden ? 'flex' : 'none';
+  if (isHidden) {
+    document.getElementById('prompt-desc').value = '';
+    document.getElementById('prompt-desc').focus();
+  }
+}
+
+function copyCanvasPrompt() {
+  const descInput = document.getElementById('prompt-desc');
+  const description = descInput.value.trim();
+
+  if (!description) {
+    descInput.focus();
+    return;
+  }
+
+  const branchSummary = branches.map(b => `${b.branch} (:${b.port})`).join(', ');
+  const routeSet = new Set();
+  branches.forEach(b => b.screens.forEach(s => routeSet.add(s.route)));
+  const routeSummary = [...routeSet].join(', ');
+  const fileNodeCount = fileNodes.length;
+  const noteCount = notes.length;
+  const markerCount = markers.length;
+
+  const contextLines = [
+    `- Canvas: ${currentCanvasId || '(unsaved)'}`,
+    `- Branches: ${branchSummary || '(none)'}`,
+    `- Routes: ${routeSummary || '/'}`,
+    `- File nodes: ${fileNodeCount}${fileNodeCount > 0 ? ` (${fileNodes.map(f => f.label).join(', ')})` : ''}`,
+    `- Notes: ${noteCount}, Markers: ${markerCount}`,
+  ];
+
+  const promptText = [
+    'Use the /live-canvas skill.',
+    '',
+    `Request: ${description}`,
+    '',
+    'Canvas context:',
+    ...contextLines,
+  ].join('\n');
+
+  navigator.clipboard.writeText(promptText).then(() => {
+    showCopyToast();
+    togglePromptPanel();
+  });
+}
+
+function showCopyToast() {
+  showClipToast('Copied!');
+}
+
+// Close prompt panel when clicking outside
+document.addEventListener('mousedown', (e) => {
+  if (promptPanel.style.display !== 'none' &&
+      !promptPanel.contains(e.target) &&
+      !e.target.closest('#titlebar-right')) {
+    promptPanel.style.display = 'none';
+  }
+});
+
+// ── Add dropdown ────────────────────────────
+function toggleAddDropdown() {
+  if (addDropdown.classList.contains('visible')) {
+    closeAddDropdown();
+  } else {
+    openAddDropdown();
+  }
+}
+
+function openAddDropdown() {
+  const rect = document.getElementById('add-btn').getBoundingClientRect();
+  addDropdown.style.left = rect.left + 'px';
+  addDropdown.style.top = (rect.bottom + 6) + 'px';
+  addDropdown.classList.add('visible');
+}
+
+function closeAddDropdown() {
+  addDropdown.classList.remove('visible');
+}
+
+document.addEventListener('mousedown', (e) => {
+  if (addDropdown.classList.contains('visible') &&
+      !addDropdown.contains(e.target) &&
+      !e.target.closest('#add-btn')) {
+    closeAddDropdown();
+  }
+});
+
+// ── Add branch (legacy prompt-based) ────────
+function addBranch() {
+  const branch = prompt('Branch name:', `branch-${branches.length + 1}`);
+  if (!branch) return;
+  const portStr = prompt('Dev server port:', String(3000 + branches.length));
+  const port = parseInt(portStr) || 3001;
+
+  branches.push({
+    branch,
+    port,
+    screens: defaultScreens.map(s => ({ ...s })),
+  });
+  render();
+  fitAll();
+  saveCanvas();
+}
+
+// ── Add standalone frame ────────────────────
+function addFrame() {
+  const port = prompt('Port:', '3000');
+  if (!port) return;
+  const route = prompt('Route:', '/');
+  if (route === null) return;
+  const name = prompt('Label:', `:${port}${route || '/'}`);
+  if (name === null) return;
+  const w = parseInt(prompt('Width:', '1440')) || 1440;
+  const h = parseInt(prompt('Height:', '900')) || 900;
+  const url = `http://localhost:${port}${route || '/'}`;
+  const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2);
+  frames.push({
+    id: generateFrameId(),
+    x: center.x - w / 2, y: center.y - h / 2,
+    url, label: name, width: w, height: h,
+  });
+  render();
+  saveCanvas();
+}
+
+// ── Delete artboard ─────────────────────────
+function deleteArtboard(bIdx, sIdx) {
+  const screen = branches[bIdx]?.screens[sIdx];
+  if (!screen) return;
+  if (!confirm(`Remove "${screen.name}" frame?`)) return;
+  branches[bIdx].screens.splice(sIdx, 1);
+  if (branches[bIdx].screens.length === 0) branches.splice(bIdx, 1);
+  render();
+  saveCanvas();
+}
+
+// ── Note mode ───────────────────────────────
+function toggleNoteMode() {
+  if (markerMode) toggleMarkerMode();
+  noteMode = !noteMode;
+  document.body.classList.toggle('note-mode', noteMode);
+  const btn = document.getElementById('note-btn');
+  if (btn) btn.classList.toggle('active', noteMode);
+}
+
+function addNote(x, y, text) {
+  const note = { id: generateNoteId(), x, y, text: text || '', width: 220, height: 160 };
+  notes.push(note);
+  render();
+  saveCanvas();
+  const el = canvas.querySelector(`[data-note-id="${note.id}"] .sticky-note-text`);
+  if (el) el.focus();
+}
+
+function deleteNote(noteId) {
+  const idx = notes.findIndex(n => n.id === noteId);
+  if (idx !== -1) {
+    notes.splice(idx, 1);
+    delete positions[`note-${noteId}`];
+    render();
+    saveCanvas();
+  }
+}
+
+// ── Marker mode ─────────────────────────────
+let markerMode = false;
+
+function toggleMarkerMode() {
+  if (noteMode) toggleNoteMode();
+  markerMode = !markerMode;
+  document.body.classList.toggle('marker-mode', markerMode);
+  const btn = document.getElementById('marker-btn');
+  if (btn) btn.classList.toggle('active', markerMode);
+}
+
+function addMarker(x, y) {
+  const text = String(markers.length + 1);
+  const marker = { id: generateMarkerId(), x, y, text };
+  markers.push(marker);
+  render();
+  saveCanvas();
+  const el = canvas.querySelector(`[data-marker-id="${marker.id}"] .marker-text`);
+  if (el) el.focus();
+}
+
+function deleteMarker(markerId) {
+  const idx = markers.findIndex(m => m.id === markerId);
+  if (idx === -1) return;
+  markers.splice(idx, 1);
+  delete positions[`marker-${markerId}`];
+  render();
+  saveCanvas();
+}
+
+// ── Standalone frame functions ──────────────
+function tryConvertToEmbed(input) {
+  try {
+    const u = new URL(input);
+    // Figma: design, board, proto, file URLs → embed.figma.com
+    if (u.hostname === 'www.figma.com' || u.hostname === 'figma.com') {
+      const match = u.pathname.match(/^\/(design|board|proto|file)\//);
+      if (match) {
+        u.hostname = 'embed.figma.com';
+        u.searchParams.set('embed-host', 'share');
+        return u.toString();
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function addUrl() {
+  const input = prompt(
+    'URL or embed code:\n\n' +
+    'You can paste:\n' +
+    '• A URL (any website)\n' +
+    '• An <iframe> embed code (from Figma, etc.)\n' +
+    '• A Figma link (auto-converts to embed)\n\n' +
+    'Note: Many sites block iframe embedding.'
+  );
+  if (!input) return;
+
+  let url, w, h, label;
+  let allowfullscreen = false;
+  let allow = '';
+  let sandbox = '';
+
+  const trimmed = input.trim();
+
+  if (trimmed.startsWith('<iframe') || trimmed.startsWith('<IFRAME')) {
+    // ── Path 1: Embed code ──
+    const doc = new DOMParser().parseFromString(trimmed, 'text/html');
+    const iframe = doc.querySelector('iframe');
+    if (!iframe || !iframe.src) {
+      alert('Could not parse embed code. Make sure it contains an <iframe> with a src attribute.');
+      return;
+    }
+    url = iframe.src;
+    w = parseInt(iframe.width) || 800;
+    h = parseInt(iframe.height) || 450;
+    allowfullscreen = iframe.hasAttribute('allowfullscreen');
+    allow = iframe.getAttribute('allow') || '';
+    sandbox = iframe.getAttribute('sandbox') || '';
+    try { label = new URL(url).hostname; } catch { label = url; }
+
+  } else if ((url = tryConvertToEmbed(trimmed))) {
+    // ── Path 2: Known service URL → auto-convert ──
+    w = parseInt(prompt('Width:', '800')) || 800;
+    h = parseInt(prompt('Height:', '450')) || 450;
+    allowfullscreen = true;
+    try { label = new URL(url).hostname; } catch { label = url; }
+
+  } else {
+    // ── Path 3: Plain URL (existing behavior) ──
+    url = trimmed;
+    w = parseInt(prompt('Width:', '1440')) || 1440;
+    h = parseInt(prompt('Height:', '900')) || 900;
+    try { label = new URL(url).hostname; } catch { label = url; }
+  }
+
+  const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2);
+  frames.push({
+    id: generateFrameId(),
+    x: center.x - w / 2, y: center.y - h / 2,
+    url, label, width: w, height: h,
+    ...(allowfullscreen && { allowfullscreen: true }),
+    ...(allow && { allow }),
+    ...(sandbox && { sandbox }),
+  });
+  render();
+  saveCanvas();
+}
+
+function deleteFrame(frameId) {
+  const idx = frames.findIndex(f => f.id === frameId);
+  if (idx === -1) return;
+  if (!confirm(`Remove "${frames[idx].label}" frame?`)) return;
+  frames.splice(idx, 1);
+  delete positions[`frame-${frameId}`];
+  render();
+  saveCanvas();
+}
+
+function duplicateNode(type, id, extra) {
+  const OFFSET = 50;
+  if (type === 'artboard') {
+    const bIdx = parseInt(id);
+    const sIdx = extra;
+    const src = branches[bIdx]?.screens[sIdx];
+    if (!src) return;
+    branches[bIdx].screens.push({ name: src.name + ' Copy', route: src.route, width: src.width, height: src.height });
+  } else if (type === 'note') {
+    const src = notes.find(n => n.id === id);
+    if (!src) return;
+    const nx = positions[`note-${src.id}`]?.x ?? src.x;
+    const ny = positions[`note-${src.id}`]?.y ?? src.y;
+    notes.push({ id: generateNoteId(), x: nx + OFFSET, y: ny + OFFSET, text: src.text, width: src.width || 220, height: src.height || 160 });
+  } else if (type === 'frame') {
+    const src = frames.find(f => f.id === id);
+    if (!src) return;
+    const fx = positions[`frame-${src.id}`]?.x ?? src.x;
+    const fy = positions[`frame-${src.id}`]?.y ?? src.y;
+    frames.push({ id: generateFrameId(), x: fx + OFFSET, y: fy + OFFSET, url: src.url, label: src.label, width: src.width, height: src.height });
+  } else if (type === 'design') {
+    const src = designNodes.find(n => n.id === id);
+    if (!src) return;
+    const dx = positions[`ds-${src.id}`]?.x ?? src.x;
+    const dy = positions[`ds-${src.id}`]?.y ?? src.y;
+    const newId = `ds-${Date.now()}`;
+    designNodes.push({
+      id: newId, x: dx + OFFSET, y: dy + OFFSET,
+      tokens: JSON.parse(JSON.stringify(src.tokens)),
+      source: src.source, modifications: {},
+    });
+  } else if (type === 'file') {
+    const src = fileNodes.find(n => n.id === id);
+    if (!src) return;
+    const fx = positions[`file-${src.id}`]?.x ?? src.x;
+    const fy = positions[`file-${src.id}`]?.y ?? src.y;
+    fileNodes.push({
+      id: generateFileNodeId(),
+      x: fx + OFFSET, y: fy + OFFSET,
+      source: src.source, label: src.label,
+      fileType: src.fileType,
+      width: src.width, height: src.height,
+      content: src.content, originalContent: src.originalContent,
+    });
+  }
+  render();
+  saveCanvas();
+}
+
+// ── Design node functions ───────────────────
+function updateToken(nodeId, tokenName, newValue, originalValue) {
+  const node = designNodes.find(n => n.id === nodeId);
+  if (!node) return;
+  if (!node.modifications) node.modifications = {};
+  if (newValue === originalValue) {
+    delete node.modifications[tokenName];
+  } else {
+    node.modifications[tokenName] = newValue;
+  }
+  renderDesignNodes();
+  saveCanvas();
+}
+
+function updateTokenFromSlider(nodeId, tokenName, numericValue, unit, originalValue) {
+  updateToken(nodeId, tokenName, numericValue + unit, originalValue);
+}
+
+function copyTokenChanges(nodeId) {
+  const node = designNodes.find(n => n.id === nodeId);
+  if (!node || !node.modifications) return;
+
+  const lines = ['Update the following design tokens:\n'];
+
+  for (const [category, tokens] of Object.entries(node.tokens)) {
+    const categoryChanges = [];
+    for (const [name, original] of Object.entries(tokens)) {
+      if (node.modifications[name] !== undefined) {
+        categoryChanges.push(`- Change \`${name}\` from \`${original}\` to \`${node.modifications[name]}\``);
+      }
+    }
+    if (categoryChanges.length > 0) {
+      const label = category.charAt(0).toUpperCase() + category.slice(1);
+      lines.push(`**${label}:**`);
+      lines.push(...categoryChanges);
+      lines.push('');
+    }
+  }
+
+  if (node.source) {
+    lines.push(`Source file: \`${node.source}\``);
+  }
+
+  navigator.clipboard.writeText(lines.join('\n')).then(() => showCopyToast());
+}
+
+async function saveTokenChanges(nodeId) {
+  const node = designNodes.find(n => n.id === nodeId);
+  if (!node || !node.modifications || Object.keys(node.modifications).length === 0) return;
+  if (!node.source) {
+    showClipToast('No source file configured', true);
+    return;
+  }
+
+  // Build changes array from modifications
+  const changes = Object.entries(node.modifications).map(([name, value]) => ({ name, value }));
+
+  try {
+    const res = await fetch('/api/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: node.source, changes }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showClipToast(data.error || 'Save failed', true);
+      return;
+    }
+
+    // Update baselines: merge modifications into the token categories
+    for (const [name, value] of Object.entries(node.modifications)) {
+      for (const category of Object.values(node.tokens)) {
+        if (category[name] !== undefined) {
+          category[name] = value;
+          break;
+        }
+      }
+    }
+
+    // Clear modifications since they're now the baseline
+    node.modifications = {};
+    render();
+    saveCanvas();
+    showClipToast(`Saved ${data.updated} token${data.updated !== 1 ? 's' : ''}`);
+
+    // Reload all artboard iframes so the new token values are reflected
+    setTimeout(() => {
+      document.querySelectorAll('.artboard-frame iframe').forEach(f => { f.src = f.src; });
+    }, 600);
+  } catch (err) {
+    showClipToast('Save failed — server error', true);
+  }
+}
+
+async function resetTokens(nodeId) {
+  const node = designNodes.find(n => n.id === nodeId);
+  if (!node) return;
+  if (!node.source) {
+    showClipToast('No source file configured', true);
+    return;
+  }
+
+  // Collect all token names across categories
+  const names = [];
+  for (const category of Object.values(node.tokens)) {
+    names.push(...Object.keys(category));
+  }
+
+  try {
+    const res = await fetch('/api/tokens/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: node.source, names }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showClipToast(data.error || 'Reset failed', true);
+      return;
+    }
+
+    // Update baselines with values read from disk
+    let updated = 0;
+    for (const [name, value] of Object.entries(data.tokens)) {
+      for (const category of Object.values(node.tokens)) {
+        if (category[name] !== undefined) {
+          category[name] = value;
+          updated++;
+          break;
+        }
+      }
+    }
+
+    // Clear modifications — disk is the new truth
+    node.modifications = {};
+    render();
+    saveCanvas();
+    showClipToast(`Reset ${updated} token${updated !== 1 ? 's' : ''} from disk`);
+  } catch (err) {
+    showClipToast('Reset failed — server error', true);
+  }
+}
+
+function deleteDesignNode(nodeId) {
+  if (!confirm('Remove design tokens?')) return;
+  const idx = designNodes.findIndex(n => n.id === nodeId);
+  if (idx !== -1) {
+    designNodes.splice(idx, 1);
+    delete positions[`ds-${nodeId}`];
+    render();
+    saveCanvas();
+  }
+}
+
+// ── Transform ───────────────────────────────
+function updateTransform() {
+  canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  zoomDisplay.textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomTo(newScale, cx, cy) {
+  const prevScale = scale;
+  newScale = Math.max(0.05, Math.min(3, newScale));
+  if (cx === undefined) cx = window.innerWidth / 2;
+  if (cy === undefined) cy = window.innerHeight / 2;
+  const ratio = newScale / prevScale;
+  panX = cx - ratio * (cx - panX);
+  panY = cy - ratio * (cy - panY);
+  scale = newScale;
+  updateTransform();
+  updateMinimap();
+}
+
+function fitAll() {
+  const items = computeLayout().filter(i => i.type === 'artboard');
+  if (items.length === 0 && notes.length === 0 && designNodes.length === 0 && frames.length === 0 && fileNodes.length === 0) return;
+
+  items.forEach(item => {
+    const key = `artboard-${item.branchIdx}-${item.screenIdx}`;
+    if (positions[key]) { item.x = positions[key].x; item.y = positions[key].y; }
+  });
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  items.forEach(ab => {
+    if (ab.x < minX) minX = ab.x;
+    if (ab.y - BRANCH_LABEL_HEIGHT - 10 < minY) minY = ab.y - BRANCH_LABEL_HEIGHT - 10;
+    if (ab.x + ab.width > maxX) maxX = ab.x + ab.width;
+    if (ab.y + ab.height > maxY) maxY = ab.y + ab.height;
+  });
+
+  notes.forEach(n => {
+    const nx = positions[`note-${n.id}`]?.x ?? n.x;
+    const ny = positions[`note-${n.id}`]?.y ?? n.y;
+    const nw = n.width || 220;
+    if (nx < minX) minX = nx;
+    if (ny < minY) minY = ny;
+    if (nx + nw > maxX) maxX = nx + nw;
+    if (ny + 160 > maxY) maxY = ny + 160;
+  });
+
+  designNodes.forEach(dn => {
+    const dx = positions[`ds-${dn.id}`]?.x ?? dn.x;
+    const dy = positions[`ds-${dn.id}`]?.y ?? dn.y;
+    if (dx < minX) minX = dx;
+    if (dy < minY) minY = dy;
+    if (dx + (dn.width || 380) > maxX) maxX = dx + (dn.width || 380);
+    if (dy + 300 > maxY) maxY = dy + 300;
+  });
+
+  frames.forEach(f => {
+    const fx = positions[`frame-${f.id}`]?.x ?? f.x;
+    const fy = positions[`frame-${f.id}`]?.y ?? f.y;
+    if (fx < minX) minX = fx;
+    if (fy < minY) minY = fy;
+    if (fx + f.width > maxX) maxX = fx + f.width;
+    if (fy + f.height > maxY) maxY = fy + f.height;
+  });
+
+  fileNodes.forEach(fn => {
+    const fnx = positions[`file-${fn.id}`]?.x ?? fn.x;
+    const fny = positions[`file-${fn.id}`]?.y ?? fn.y;
+    if (fnx < minX) minX = fnx;
+    if (fny < minY) minY = fny;
+    if (fnx + fn.width > maxX) maxX = fnx + fn.width;
+    if (fny + fn.height > maxY) maxY = fny + fn.height;
+  });
+
+  if (minX === Infinity) return;
+
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  const viewW = window.innerWidth - 40;
+  const viewH = window.innerHeight - 120;
+  const fitScale = Math.min(viewW / contentW, viewH / contentH, 1) * 0.9;
+
+  scale = fitScale;
+  panX = (viewW - contentW * scale) / 2 - minX * scale + 20;
+  panY = (viewH - contentH * scale) / 2 - minY * scale + 56;
+
+  updateTransform();
+  updateMinimap();
+}
+
+// ── Pan + Drag ──────────────────────────────
+document.addEventListener('mousedown', (e) => {
+  if (clipActive) return;
+
+  // Note mode: place a note on click
+  if (noteMode) {
+    if (e.target.closest('#toolbar') || e.target.closest('#titlebar')) return;
+    const canvasPos = screenToCanvas(e.clientX, e.clientY);
+    addNote(canvasPos.x, canvasPos.y);
+    toggleNoteMode();
+    return;
+  }
+
+  // Marker mode: place a marker on click
+  if (markerMode) {
+    if (e.target.closest('#toolbar') || e.target.closest('#titlebar')) return;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    addMarker(cp.x, cp.y);
+    toggleMarkerMode();
+    return;
+  }
+
+  // Drag handle: start dragging (skip if clicking into editable text)
+  const grip = e.target.closest('[data-drag-handle]');
+  if (grip && !e.target.closest('[contenteditable]')) {
+    const draggable = grip.closest('[data-drag-key]');
+    if (draggable) {
+      e.preventDefault();
+      isDragging = true;
+      dragTarget = draggable;
+      dragKey = draggable.dataset.dragKey;
+      const canvasPos = screenToCanvas(e.clientX, e.clientY);
+      dragOffsetX = parseFloat(draggable.style.left) - canvasPos.x;
+      dragOffsetY = parseFloat(draggable.style.top) - canvasPos.y;
+      document.body.style.cursor = 'grabbing';
+      document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'none');
+      return;
+    }
+  }
+
+  // UI chrome — don't pan
+  if (e.target.closest('#toolbar') || e.target.closest('#titlebar') || e.target.closest('#minimap') || e.target.closest('#prompt-panel') || e.target.closest('#popover') || e.target.closest('#canvas-dropdown') || e.target.closest('#add-dropdown') || e.target.closest('[data-pop]') || e.target.closest('.note-wrapper') || e.target.closest('.marker-wrapper') || e.target.closest('.design-node') || e.target.closest('.standalone-frame') || e.target.closest('.file-node') || e.target.closest('.node-delete')) return;
+
+  // Start panning
+  isPanning = true;
+  startX = e.clientX - panX;
+  startY = e.clientY - panY;
+  document.body.classList.add('panning');
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'none');
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    const canvasPos = screenToCanvas(e.clientX, e.clientY);
+    const newX = canvasPos.x + dragOffsetX;
+    const newY = canvasPos.y + dragOffsetY;
+    dragTarget.style.left = newX + 'px';
+    dragTarget.style.top = newY + 'px';
+    positions[dragKey] = { x: newX, y: newY };
+    updateMinimap();
+    return;
+  }
+  if (!isPanning) return;
+  panX = e.clientX - startX;
+  panY = e.clientY - startY;
+  updateTransform();
+  updateMinimap();
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    document.body.style.cursor = '';
+    document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'auto');
+
+    // Sync positions back to data objects for notes and design nodes
+    if (dragKey && dragKey.startsWith('note-')) {
+      const noteId = dragKey.replace('note-', '');
+      const note = notes.find(n => n.id === noteId);
+      if (note && positions[dragKey]) {
+        note.x = positions[dragKey].x;
+        note.y = positions[dragKey].y;
+      }
+    }
+    if (dragKey && dragKey.startsWith('ds-')) {
+      const dsId = dragKey.replace('ds-', '');
+      const dn = designNodes.find(n => n.id === dsId);
+      if (dn && positions[dragKey]) {
+        dn.x = positions[dragKey].x;
+        dn.y = positions[dragKey].y;
+      }
+    }
+    if (dragKey && dragKey.startsWith('frame-')) {
+      const frameId = dragKey.replace('frame-', '');
+      const frame = frames.find(f => f.id === frameId);
+      if (frame && positions[dragKey]) {
+        frame.x = positions[dragKey].x;
+        frame.y = positions[dragKey].y;
+      }
+    }
+    if (dragKey && dragKey.startsWith('marker-')) {
+      const mId = dragKey.replace('marker-', '');
+      const m = markers.find(n => n.id === mId);
+      if (m && positions[dragKey]) {
+        m.x = positions[dragKey].x;
+        m.y = positions[dragKey].y;
+      }
+    }
+    if (dragKey && dragKey.startsWith('file-')) {
+      const fId = dragKey.replace('file-', '');
+      const fn = fileNodes.find(n => n.id === fId);
+      if (fn && positions[dragKey]) {
+        fn.x = positions[dragKey].x;
+        fn.y = positions[dragKey].y;
+      }
+    }
+
+    dragTarget = null;
+    dragKey = null;
+    saveCanvas();
+    return;
+  }
+  isPanning = false;
+  document.body.classList.remove('panning');
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'auto');
+});
+
+// ── Zoom ────────────────────────────────────
+document.addEventListener('wheel', (e) => {
+  if (e.target.closest('#toolbar') || e.target.closest('#titlebar') || e.target.closest('.file-editor')) return;
+  e.preventDefault();
+  const delta = -e.deltaY * 0.001;
+  zoomTo(scale * (1 + delta), e.clientX, e.clientY);
+}, { passive: false });
+
+// ── Double-click to fit ─────────────────────
+document.addEventListener('dblclick', (e) => {
+  if (e.target.closest('#toolbar') || e.target.closest('#titlebar') || e.target.closest('.artboard-frame') || e.target.closest('.note-wrapper') || e.target.closest('.marker-wrapper') || e.target.closest('.design-node') || e.target.closest('.standalone-frame') || e.target.closest('.file-node')) return;
+  fitAll();
+});
+
+// ── Keyboard shortcuts ──────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (clipActive) { deactivateClipMode(); return; }
+    if (noteMode) { toggleNoteMode(); return; }
+    if (markerMode) { toggleMarkerMode(); return; }
+    if (promptPanel.style.display !== 'none') { promptPanel.style.display = 'none'; return; }
+    if (addDropdown.classList.contains('visible')) { closeAddDropdown(); return; }
+  }
+  // Don't fire shortcuts when typing in inputs
+  if (e.target.matches('input, textarea, [contenteditable]')) return;
+  if (e.key === 'p' && !e.metaKey && !e.ctrlKey && !popoverOpen) { addFileNode(); return; }
+  if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !popoverOpen) { addFrame(); return; }
+  if (e.key === 'n' && !e.metaKey && !e.ctrlKey && !popoverOpen) { toggleNoteMode(); return; }
+  if (e.key === 'm' && !e.metaKey && !e.ctrlKey && !popoverOpen) { toggleMarkerMode(); return; }
+  if (e.key === 'u' && !e.metaKey && !e.ctrlKey && !popoverOpen) { addUrl(); return; }
+  if (e.key === '0' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); zoomTo(1); }
+  if (e.key === '1' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); fitAll(); }
+  if (e.key === '=' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); zoomTo(scale + 0.1); }
+  if (e.key === '-' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); zoomTo(scale - 0.1); }
+});
+
+// ── Minimap ─────────────────────────────────
+function updateMinimap() {
+  const items = computeLayout().filter(i => i.type === 'artboard');
+
+  // Apply stored positions to artboards
+  items.forEach(ab => {
+    const key = `artboard-${ab.branchIdx}-${ab.screenIdx}`;
+    if (positions[key]) { ab.x = positions[key].x; ab.y = positions[key].y; }
+  });
+
+  if (items.length === 0 && notes.length === 0 && designNodes.length === 0 && frames.length === 0 && fileNodes.length === 0) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  items.forEach(ab => {
+    if (ab.x < minX) minX = ab.x;
+    if (ab.y < minY) minY = ab.y;
+    if (ab.x + ab.width > maxX) maxX = ab.x + ab.width;
+    if (ab.y + ab.height > maxY) maxY = ab.y + ab.height;
+  });
+
+  notes.forEach(n => {
+    const nx = positions[`note-${n.id}`]?.x ?? n.x;
+    const ny = positions[`note-${n.id}`]?.y ?? n.y;
+    const nw = n.width || 220;
+    if (nx < minX) minX = nx;
+    if (ny < minY) minY = ny;
+    if (nx + nw > maxX) maxX = nx + nw;
+    if (ny + 160 > maxY) maxY = ny + 160;
+  });
+
+  designNodes.forEach(dn => {
+    const dx = positions[`ds-${dn.id}`]?.x ?? dn.x;
+    const dy = positions[`ds-${dn.id}`]?.y ?? dn.y;
+    if (dx < minX) minX = dx;
+    if (dy < minY) minY = dy;
+    if (dx + (dn.width || 380) > maxX) maxX = dx + (dn.width || 380);
+    if (dy + 300 > maxY) maxY = dy + 300;
+  });
+
+  frames.forEach(f => {
+    const fx = positions[`frame-${f.id}`]?.x ?? f.x;
+    const fy = positions[`frame-${f.id}`]?.y ?? f.y;
+    if (fx < minX) minX = fx;
+    if (fy < minY) minY = fy;
+    if (fx + f.width > maxX) maxX = fx + f.width;
+    if (fy + f.height > maxY) maxY = fy + f.height;
+  });
+
+  fileNodes.forEach(fn => {
+    const fnx = positions[`file-${fn.id}`]?.x ?? fn.x;
+    const fny = positions[`file-${fn.id}`]?.y ?? fn.y;
+    if (fnx < minX) minX = fnx;
+    if (fny < minY) minY = fny;
+    if (fnx + fn.width > maxX) maxX = fnx + fn.width;
+    if (fny + fn.height > maxY) maxY = fny + fn.height;
+  });
+
+  if (minX === Infinity) return;
+
+  const padding = 100;
+  minX -= padding; minY -= padding;
+  maxX += padding; maxY += padding;
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  const mmW = 180;
+  const mmH = 120;
+  const mmScale = Math.min(mmW / contentW, mmH / contentH);
+
+  let html = '';
+
+  items.forEach(ab => {
+    const x = (ab.x - minX) * mmScale;
+    const y = (ab.y - minY) * mmScale;
+    const w = ab.width * mmScale;
+    const h = ab.height * mmScale;
+    html += `<div class="minimap-artboard" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;"></div>`;
+  });
+
+  notes.forEach(n => {
+    const nx = positions[`note-${n.id}`]?.x ?? n.x;
+    const ny = positions[`note-${n.id}`]?.y ?? n.y;
+    const x = (nx - minX) * mmScale;
+    const y = (ny - minY) * mmScale;
+    html += `<div class="minimap-note" style="left:${x}px;top:${y}px;"></div>`;
+  });
+
+  designNodes.forEach(dn => {
+    const dx = positions[`ds-${dn.id}`]?.x ?? dn.x;
+    const dy = positions[`ds-${dn.id}`]?.y ?? dn.y;
+    const x = (dx - minX) * mmScale;
+    const y = (dy - minY) * mmScale;
+    const w = (dn.width || 380) * mmScale;
+    const h = 200 * mmScale;
+    html += `<div class="minimap-design-node" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;"></div>`;
+  });
+
+  frames.forEach(f => {
+    const fx = positions[`frame-${f.id}`]?.x ?? f.x;
+    const fy = positions[`frame-${f.id}`]?.y ?? f.y;
+    const x = (fx - minX) * mmScale;
+    const y = (fy - minY) * mmScale;
+    const w = f.width * mmScale;
+    const h = f.height * mmScale;
+    html += `<div class="minimap-artboard" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;"></div>`;
+  });
+
+  fileNodes.forEach(fn => {
+    const fnx = positions[`file-${fn.id}`]?.x ?? fn.x;
+    const fny = positions[`file-${fn.id}`]?.y ?? fn.y;
+    const x = (fnx - minX) * mmScale;
+    const y = (fny - minY) * mmScale;
+    const w = fn.width * mmScale;
+    const h = fn.height * mmScale;
+    html += `<div class="minimap-file-node" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;"></div>`;
+  });
+
+  const vpLeft = (-panX / scale - minX) * mmScale;
+  const vpTop = (-panY / scale - minY) * mmScale;
+  const vpW = (window.innerWidth / scale) * mmScale;
+  const vpH = (window.innerHeight / scale) * mmScale;
+  html += `<div id="minimap-viewport" style="left:${vpLeft}px;top:${vpTop}px;width:${vpW}px;height:${vpH}px;"></div>`;
+
+  minimap.innerHTML = html;
+}
+
+// ── Screen Clipper ──────────────────────
+let clipActive = false;
+let clipStream = null;
+let clipStartX = 0;
+let clipStartY = 0;
+let clipDragging = false;
+
+const clipSelection = document.getElementById('clip-selection');
+const clipBtn = document.getElementById('clip-btn');
+
+function toggleClipMode() {
+  if (clipActive) {
+    deactivateClipMode();
+  } else {
+    activateClipMode();
+  }
+}
+
+async function activateClipMode() {
+  if (!clipStream || !clipStream.active) {
+    try {
+      clipStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'browser' },
+        preferCurrentTab: true,
+      });
+      clipStream.getVideoTracks()[0].addEventListener('ended', () => {
+        clipStream = null;
+        if (clipActive) deactivateClipMode();
+      });
+    } catch (err) {
+      showClipToast('Screen capture not available — try Cmd+Shift+4 instead', true);
+      return;
+    }
+  }
+
+  clipActive = true;
+  document.body.classList.add('clip-mode');
+  clipBtn.classList.add('active');
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'none');
+
+  document.addEventListener('mousedown', onClipMouseDown);
+  document.addEventListener('mousemove', onClipMouseMove);
+  document.addEventListener('mouseup', onClipMouseUp);
+}
+
+function deactivateClipMode() {
+  clipActive = false;
+  clipDragging = false;
+  document.body.classList.remove('clip-mode');
+  clipBtn.classList.remove('active');
+  clipSelection.classList.remove('visible');
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'auto');
+
+  document.removeEventListener('mousedown', onClipMouseDown);
+  document.removeEventListener('mousemove', onClipMouseMove);
+  document.removeEventListener('mouseup', onClipMouseUp);
+}
+
+function onClipMouseDown(e) {
+  if (e.target.closest('#toolbar') || e.target.closest('#titlebar') || e.target.closest('#minimap') || e.target.closest('#prompt-panel') || e.target.closest('#add-dropdown')) return;
+  e.preventDefault();
+  clipStartX = e.clientX;
+  clipStartY = e.clientY;
+  clipDragging = true;
+  clipSelection.style.left = clipStartX + 'px';
+  clipSelection.style.top = clipStartY + 'px';
+  clipSelection.style.width = '0px';
+  clipSelection.style.height = '0px';
+  clipSelection.classList.add('visible');
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'none');
+}
+
+function onClipMouseMove(e) {
+  if (!clipDragging) return;
+  const x = Math.min(e.clientX, clipStartX);
+  const y = Math.min(e.clientY, clipStartY);
+  const w = Math.abs(e.clientX - clipStartX);
+  const h = Math.abs(e.clientY - clipStartY);
+  clipSelection.style.left = x + 'px';
+  clipSelection.style.top = y + 'px';
+  clipSelection.style.width = w + 'px';
+  clipSelection.style.height = h + 'px';
+}
+
+function onClipMouseUp(e) {
+  if (!clipDragging) return;
+  clipDragging = false;
+  document.querySelectorAll('.artboard-frame iframe').forEach(f => f.style.pointerEvents = 'auto');
+
+  const x = Math.min(e.clientX, clipStartX);
+  const y = Math.min(e.clientY, clipStartY);
+  const w = Math.abs(e.clientX - clipStartX);
+  const h = Math.abs(e.clientY - clipStartY);
+
+  if (w < 10 || h < 10) {
+    clipSelection.classList.remove('visible');
+    return;
+  }
+
+  captureClip({ x, y, width: w, height: h });
+}
+
+async function captureClip(rect) {
+  clipSelection.classList.remove('visible');
+  await new Promise(r => setTimeout(r, 120));
+
+  try {
+    const track = clipStream.getVideoTracks()[0];
+    let bitmap;
+
+    if (typeof ImageCapture !== 'undefined') {
+      const imageCapture = new ImageCapture(track);
+      bitmap = await imageCapture.grabFrame();
+    } else {
+      const video = document.createElement('video');
+      video.srcObject = clipStream;
+      video.muted = true;
+      video.play();
+      await new Promise(r => { video.onloadeddata = r; });
+      bitmap = await createImageBitmap(video);
+      video.srcObject = null;
+    }
+
+    const scaleX = bitmap.width / window.innerWidth;
+    const scaleY = bitmap.height / window.innerHeight;
+    const cropX = Math.round(Math.max(0, rect.x * scaleX));
+    const cropY = Math.round(Math.max(0, rect.y * scaleY));
+    const cropW = Math.round(Math.min(rect.width * scaleX, bitmap.width - cropX));
+    const cropH = Math.round(Math.min(rect.height * scaleY, bitmap.height - cropY));
+
+    const canvasRect = {
+      x: (rect.x - panX) / scale,
+      y: (rect.y - panY) / scale,
+      width: rect.width / scale,
+      height: rect.height / scale,
+    };
+
+    const artboards = computeLayout().filter(item => {
+      if (item.type !== 'artboard') return false;
+      // Apply stored positions for accurate overlap detection
+      const key = `artboard-${item.branchIdx}-${item.screenIdx}`;
+      if (positions[key]) { item.x = positions[key].x; item.y = positions[key].y; }
+      return !(item.x + item.width < canvasRect.x ||
+               item.x > canvasRect.x + canvasRect.width ||
+               item.y + item.height < canvasRect.y ||
+               item.y > canvasRect.y + canvasRect.height);
+    });
+
+    const browserName = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+      ? 'Safari' : /Chrome/.test(navigator.userAgent) ? 'Chrome' : 'Browser';
+    const zoomPct = Math.round(scale * 100);
+
+    let captionText;
+    if (artboards.length === 0) {
+      captionText = `(no artboard)  @${zoomPct}%  ${browserName}`;
+    } else {
+      captionText = artboards.map(ab =>
+        `⌥ ${ab.branch}  :${ab.port}  ${ab.route}  ${ab.name} ${ab.width}×${ab.height}  @${zoomPct}%  ${browserName}`
+      ).join('   ');
+    }
+
+    const captionScale = scaleY || 1;
+    const captionHeight = Math.round(32 * captionScale);
+    const fontSize = Math.round(12 * captionScale);
+    const captionPadding = Math.round(10 * captionScale);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = cropW;
+    outCanvas.height = cropH + captionHeight;
+    const ctx = outCanvas.getContext('2d');
+
+    ctx.drawImage(bitmap, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, cropH, cropW, captionHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `${fontSize}px "JetBrains Mono", "SF Mono", "Fira Code", monospace`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(captionText, captionPadding, cropH + captionHeight / 2);
+
+    const blob = await new Promise(r => outCanvas.toBlob(r, 'image/png'));
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+    } catch (clipErr) {
+      console.warn('Clipboard write failed:', clipErr);
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const browser = browserName.toLowerCase();
+    const filename = artboards.length > 0
+      ? `clip-${artboards[0].branch}-${artboards[0].name.toLowerCase()}-${browser}-${timestamp}.png`
+      : `clip-${browser}-${timestamp}.png`;
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(downloadUrl);
+
+    showClipToast('Clipped → Downloads');
+    bitmap.close();
+  } catch (err) {
+    console.error('Clip capture failed:', err);
+    showClipToast('Clip failed — check console', true);
+  }
+
+  deactivateClipMode();
+}
+
+function showClipToast(message, isError = false) {
+  copyToast.textContent = message;
+  copyToast.classList.toggle('error', isError);
+  copyToast.classList.add('visible');
+  setTimeout(() => {
+    copyToast.classList.remove('visible');
+    setTimeout(() => {
+      copyToast.textContent = 'Copied!';
+      copyToast.classList.remove('error');
+    }, 300);
+  }, 2000);
+}
+
+// ── Popover (shared for name / route / dims editing) ─
+const popover = document.getElementById('popover');
+let popoverCleanup = null;
+let popoverOpen = false;
+
+canvas.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-pop]');
+  if (!el) return;
+  e.stopPropagation();
+
+  const type = el.dataset.pop;
+  if (type === 'note-width') {
+    openNotePopover(el, el.dataset.noteId);
+    return;
+  }
+  if (type === 'frame-name') {
+    openFrameNamePopover(el, el.dataset.frameId);
+    return;
+  }
+  if (type === 'frame-dims') {
+    openFrameDimsPopover(el, el.dataset.frameId);
+    return;
+  }
+  if (type === 'file-dims') {
+    openFileDimsPopover(el, el.dataset.fileId);
+    return;
+  }
+
+  const bIdx = parseInt(el.dataset.b);
+  const sIdx = parseInt(el.dataset.s);
+  const screen = branches[bIdx]?.screens[sIdx];
+  if (!screen) return;
+
+  openPopover(el, type, screen);
+});
+
+function openPopover(anchorEl, type, screen) {
+  hidePopover();
+  const rect = anchorEl.getBoundingClientRect();
+
+  if (type === 'name') {
+    popover.innerHTML = `<input id="pop-input" type="text" value="${screen.name}" style="width:180px" />`;
+    showAndPosition(rect);
+    const input = document.getElementById('pop-input');
+    input.focus();
+    input.select();
+    bindSingleInput(input, (val) => {
+      if (val && val !== screen.name) { screen.name = val; render(); saveCanvas(); }
+    });
+
+  } else if (type === 'route') {
+    popover.innerHTML = `<input id="pop-input" type="text" value="${screen.route}" style="width:240px;font-family:var(--mono)" />`;
+    showAndPosition(rect);
+    const input = document.getElementById('pop-input');
+    input.focus();
+    input.select();
+    bindSingleInput(input, (val) => {
+      if (val && val !== screen.route) { screen.route = val; render(); saveCanvas(); }
+    });
+
+  } else if (type === 'dims') {
+    popover.innerHTML = `
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="pop-w" type="number" value="${screen.width}" style="width:70px;font-family:var(--mono)" />
+        <span style="color:var(--text-muted)">×</span>
+        <input id="pop-h" type="number" value="${screen.height}" style="width:70px;font-family:var(--mono)" />
+      </div>`;
+    showAndPosition(rect);
+    const wInput = document.getElementById('pop-w');
+    const hInput = document.getElementById('pop-h');
+    wInput.focus();
+    wInput.select();
+    bindDualInput(wInput, hInput, (w, h) => {
+      const newW = parseInt(w) || screen.width;
+      const newH = parseInt(h) || screen.height;
+      if (newW !== screen.width || newH !== screen.height) {
+        screen.width = newW; screen.height = newH; render(); saveCanvas();
+      }
+    });
+  }
+}
+
+function openNotePopover(anchorEl, noteId) {
+  hidePopover();
+  const note = notes.find(n => n.id === noteId);
+  if (!note) return;
+  const rect = anchorEl.getBoundingClientRect();
+  popover.innerHTML = `<input id="pop-input" type="number" value="${note.width || 220}" style="width:80px;font-family:var(--mono)" />`;
+  showAndPosition(rect);
+  const input = document.getElementById('pop-input');
+  input.focus();
+  input.select();
+  bindSingleInput(input, (val) => {
+    const newW = parseInt(val) || 220;
+    if (newW !== note.width) { note.width = newW; render(); saveCanvas(); }
+  });
+}
+
+function openFrameNamePopover(anchorEl, frameId) {
+  hidePopover();
+  const frame = frames.find(f => f.id === frameId);
+  if (!frame) return;
+  const rect = anchorEl.getBoundingClientRect();
+  popover.innerHTML = `<input id="pop-url" type="text" value="${frame.url}" style="width:320px;font-family:var(--mono)" />`;
+  showAndPosition(rect);
+  const input = document.getElementById('pop-url');
+  input.focus();
+  input.select();
+  bindSingleInput(input, (val) => {
+    if (val && val !== frame.url) {
+      frame.url = val;
+      try { frame.label = new URL(val).hostname; } catch { frame.label = val; }
+      if (val.match(/^http:\/\/localhost:(\d+)/)) {
+        const m = val.match(/^http:\/\/localhost:(\d+)(.*)/);
+        frame.label = `:${m[1]}${m[2] || '/'}`;
+      }
+      render(); saveCanvas();
+    }
+  });
+}
+
+function openFrameDimsPopover(anchorEl, frameId) {
+  hidePopover();
+  const frame = frames.find(f => f.id === frameId);
+  if (!frame) return;
+  const rect = anchorEl.getBoundingClientRect();
+  popover.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input id="pop-w" type="number" value="${frame.width}" style="width:70px;font-family:var(--mono)" />
+      <span style="color:var(--text-muted)">×</span>
+      <input id="pop-h" type="number" value="${frame.height}" style="width:70px;font-family:var(--mono)" />
+    </div>`;
+  showAndPosition(rect);
+  const wInput = document.getElementById('pop-w');
+  const hInput = document.getElementById('pop-h');
+  wInput.focus();
+  wInput.select();
+  bindDualInput(wInput, hInput, (w, h) => {
+    const newW = parseInt(w) || frame.width;
+    const newH = parseInt(h) || frame.height;
+    if (newW !== frame.width || newH !== frame.height) {
+      frame.width = newW; frame.height = newH; render(); saveCanvas();
+    }
+  });
+}
+
+function openFileDimsPopover(anchorEl, fileId) {
+  hidePopover();
+  const fileNode = fileNodes.find(fn => fn.id === fileId);
+  if (!fileNode) return;
+  const rect = anchorEl.getBoundingClientRect();
+  popover.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input id="pop-w" type="number" value="${fileNode.width}" style="width:70px;font-family:var(--mono)" />
+      <span style="color:var(--text-muted)">×</span>
+      <input id="pop-h" type="number" value="${fileNode.height}" style="width:70px;font-family:var(--mono)" />
+    </div>`;
+  showAndPosition(rect);
+  const wInput = document.getElementById('pop-w');
+  const hInput = document.getElementById('pop-h');
+  wInput.focus();
+  wInput.select();
+  bindDualInput(wInput, hInput, (w, h) => {
+    const newW = parseInt(w) || fileNode.width;
+    const newH = parseInt(h) || fileNode.height;
+    if (newW !== fileNode.width || newH !== fileNode.height) {
+      fileNode.width = newW; fileNode.height = newH; render(); saveCanvas();
+    }
+  });
+}
+
+function showAndPosition(anchorRect) {
+  popover.classList.add('visible');
+  popoverOpen = true;
+  requestAnimationFrame(() => {
+    const popRect = popover.getBoundingClientRect();
+    let left = anchorRect.left + anchorRect.width / 2 - popRect.width / 2;
+    let top = anchorRect.top - popRect.height - 10;
+    left = Math.max(8, Math.min(left, window.innerWidth - popRect.width - 8));
+    if (top < 8) top = anchorRect.bottom + 10;
+    popover.style.left = left + 'px';
+    popover.style.top = top + 'px';
+  });
+}
+
+function bindSingleInput(input, onConfirm) {
+  let confirmed = false;
+  const confirm = () => {
+    if (confirmed) return;
+    confirmed = true;
+    onConfirm(input.value.trim());
+    hidePopover();
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirm();
+    if (e.key === 'Escape') { confirmed = true; hidePopover(); }
+  });
+  input.addEventListener('blur', () => setTimeout(confirm, 120));
+}
+
+function bindDualInput(inputA, inputB, onConfirm) {
+  let confirmed = false;
+  let blurTimeout;
+  const confirm = () => {
+    if (confirmed) return;
+    confirmed = true;
+    onConfirm(inputA.value, inputB.value);
+    hidePopover();
+  };
+  const onKey = (e) => {
+    if (e.key === 'Enter') confirm();
+    if (e.key === 'Escape') { confirmed = true; hidePopover(); }
+  };
+  inputA.addEventListener('keydown', onKey);
+  inputB.addEventListener('keydown', onKey);
+  const onBlur = () => { blurTimeout = setTimeout(confirm, 150); };
+  const onFocus = () => clearTimeout(blurTimeout);
+  inputA.addEventListener('blur', onBlur);
+  inputB.addEventListener('blur', onBlur);
+  inputA.addEventListener('focus', onFocus);
+  inputB.addEventListener('focus', onFocus);
+  popoverCleanup = () => clearTimeout(blurTimeout);
+}
+
+function hidePopover() {
+  if (popoverCleanup) { popoverCleanup(); popoverCleanup = null; }
+  popover.classList.remove('visible');
+  popover.innerHTML = '';
+  popoverOpen = false;
+}
+
+// Click outside to close popover
+document.addEventListener('mousedown', (e) => {
+  if (popoverOpen && !popover.contains(e.target) && !e.target.closest('[data-pop]')) {
+    hidePopover();
+  }
+});
+
+// ── Canvas Switcher ─────────────────────────
+const canvasSwitcher = document.getElementById('canvas-switcher');
+const canvasDropdown = document.getElementById('canvas-dropdown');
+const titlebarSubtitle = document.getElementById('titlebar-subtitle');
+
+function toggleCanvasDropdown() {
+  if (canvasDropdown.classList.contains('visible')) {
+    closeCanvasDropdown();
+  } else {
+    openCanvasDropdown();
+  }
+}
+
+async function openCanvasDropdown() {
+  canvasSwitcher.classList.add('open');
+
+  let canvases = [];
+  try {
+    const res = await fetch('/api/canvases');
+    canvases = await res.json();
+  } catch (err) {
+    // Server might not be running
+  }
+
+  let html = '';
+  canvases.forEach(c => {
+    const isActive = c.id === currentCanvasId;
+    html += `<button class="dropdown-option${isActive ? ' active' : ''}" onclick="switchCanvas('${c.id}')">${c.name}</button>`;
+  });
+  html += `<button class="dropdown-option new-canvas" onclick="createNewCanvas()">+ New Canvas</button>`;
+  canvasDropdown.innerHTML = html;
+
+  const rect = canvasSwitcher.getBoundingClientRect();
+  canvasDropdown.style.left = rect.left + 'px';
+  canvasDropdown.style.top = (rect.bottom + 6) + 'px';
+  canvasDropdown.classList.add('visible');
+}
+
+function closeCanvasDropdown() {
+  canvasSwitcher.classList.remove('open');
+  canvasDropdown.classList.remove('visible');
+}
+
+document.addEventListener('mousedown', (e) => {
+  if (canvasDropdown.classList.contains('visible') &&
+      !canvasDropdown.contains(e.target) &&
+      !canvasSwitcher.contains(e.target)) {
+    closeCanvasDropdown();
+  }
+});
+
+function switchCanvas(canvasId) {
+  closeCanvasDropdown();
+  const url = new URL(window.location);
+  url.searchParams.set('canvas', canvasId);
+  window.location.href = url.toString();
+}
+
+function createNewCanvas() {
+  closeCanvasDropdown();
+  const name = prompt('Canvas name (e.g. "dashboard-breakpoints"):');
+  if (!name) return;
+  const canvasId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!canvasId) return;
+
+  currentCanvasId = canvasId;
+  currentCanvasDisplayName = name;
+  branches.length = 0;
+  branches.push({
+    branch: 'main',
+    port: 3000,
+    screens: defaultScreens.map(s => ({ ...s })),
+  });
+  // Clear canvas-specific state
+  Object.keys(positions).forEach(k => delete positions[k]);
+  notes.length = 0;
+  frames.length = 0;
+  designNodes.length = 0;
+  markers.length = 0;
+  fileNodes.length = 0;
+
+  titlebarSubtitle.textContent = name;
+
+  saveCanvas().then(() => {
+    const url = new URL(window.location);
+    url.searchParams.set('canvas', canvasId);
+    history.replaceState(null, '', url.toString());
+  });
+  render();
+  fitAll();
+}
+
+// ── Persistence ─────────────────────────────
+let currentCanvasId = null;
+let currentCanvasDisplayName = 'Live Canvas';
+let saveTimeout = null;
+
+function saveCanvas() {
+  if (!currentCanvasId) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      const payload = {
+        name: currentCanvasDisplayName,
+        branches: branches.map(v => ({
+          branch: v.branch,
+          port: v.port,
+          screens: v.screens.map(s => ({
+            name: s.name,
+            route: s.route,
+            width: s.width,
+            height: s.height,
+          })),
+        })),
+        positions: { ...positions },
+        notes: notes.map(n => ({ ...n })),
+        frames: frames.map(f => ({ ...f })),
+        designNodes: designNodes.map(dn => ({ ...dn })),
+        markers: markers.map(m => ({ ...m })),
+        fileNodes: fileNodes.map(fn => ({ ...fn })),
+      };
+      try {
+        await fetch(`/api/canvases/${currentCanvasId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const dot = document.querySelector('.status-dot');
+        dot.style.background = 'var(--accent)';
+        setTimeout(() => { dot.style.background = 'var(--green)'; }, 600);
+      } catch (err) {
+        console.warn('Save failed:', err);
+      }
+      resolve();
+    }, 300);
+  });
+}
+
+async function loadCanvas() {
+  const params = new URLSearchParams(window.location.search);
+  const canvasParam = params.get('canvas');
+
+  if (!canvasParam) {
+    render();
+    fitAll();
+    return;
+  }
+
+  currentCanvasId = canvasParam;
+
+  try {
+    const res = await fetch(`/api/canvases/${canvasParam}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+
+    currentCanvasDisplayName = data.name || canvasParam;
+    titlebarSubtitle.textContent = currentCanvasDisplayName;
+
+    // Load branches (backward compat: accept "variants" key from old canvases)
+    branches.length = 0;
+    const loadedBranches = data.branches || data.variants || [];
+    loadedBranches.forEach(v => branches.push(v));
+
+    // Load positions
+    Object.keys(positions).forEach(k => delete positions[k]);
+    Object.assign(positions, data.positions || {});
+
+    // Load notes
+    notes.length = 0;
+    (data.notes || []).forEach(n => notes.push(n));
+
+    // Load standalone frames
+    frames.length = 0;
+    (data.frames || []).forEach(f => frames.push(f));
+
+    // Load design nodes
+    designNodes.length = 0;
+    (data.designNodes || []).forEach(dn => designNodes.push(dn));
+
+    // Load markers (backward compat: fall back from "number" to "text")
+    markers.length = 0;
+    (data.markers || []).forEach(m => {
+      if (!m.text && m.number != null) m.text = String(m.number);
+      markers.push(m);
+    });
+
+    // Load file nodes (clean stored paths for backward compat)
+    fileNodes.length = 0;
+    (data.fileNodes || []).forEach(fn => {
+      if (fn.source) fn.source = cleanPath(fn.source);
+      fileNodes.push(fn);
+    });
+
+    render();
+    fitAll();
+  } catch (err) {
+    currentCanvasDisplayName = canvasParam;
+    titlebarSubtitle.textContent = canvasParam;
+    render();
+    fitAll();
+  }
+}
+
+// ── Server check ────────────────────────────
+const serverBanner = document.getElementById('server-banner');
+
+async function checkServer() {
+  if (location.protocol === 'file:') {
+    showServerBanner();
+    return;
+  }
+  try {
+    const res = await fetch('/api/canvases', { method: 'GET' });
+    if (!res.ok) throw new Error();
+  } catch {
+    showServerBanner();
+  }
+}
+
+function showServerBanner() {
+  serverBanner.classList.add('visible');
+}
+
+function dismissBanner() {
+  serverBanner.classList.remove('visible');
+}
+
+function copyServerCmd() {
+  const cmd = document.getElementById('server-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    showClipToast('Copied!');
+  });
+}
+
+// ── Init ────────────────────────────────────
+loadCanvas();
+checkServer();
+window.addEventListener('resize', () => { updateMinimap(); });
+</script>
+</body>
+</html>

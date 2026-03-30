@@ -1,0 +1,9 @@
+{
+  "name": "design-kit",
+  "description": "Live canvas for multi-viewport design review and knowledge infrastructure bootstrapping for projects",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jordan Stevens"
+  },
+  "keywords": ["design", "canvas", "viewport", "knowledge", "scaffolding"]
+}

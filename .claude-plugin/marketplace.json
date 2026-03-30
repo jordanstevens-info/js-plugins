@@ -1,0 +1,16 @@
+{
+  "name": "js-plugins",
+  "owner": {
+    "name": "Jordan Stevens"
+  },
+  "metadata": {
+    "description": "Design and development workflow plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "design-kit",
+      "source": "./plugins/design-kit",
+      "description": "Live canvas for multi-viewport design review and knowledge infrastructure bootstrapping for projects"
+    }
+  ]
+}

@@ -32,3 +32,16 @@ Bootstrap a project's knowledge infrastructure. Creates a `knowledge/` directory
 - Set up agent context for a new or existing project
 - Generate a `CLAUDE.md` grounded in real project detection (language, package manager, scripts, git state)
 - Install the `/dev` workflow skill for ongoing development sessions
+
+### design-update
+
+Compose Slack update messages summarizing work done across tools for team visibility.
+
+#### `/design-update`
+
+Gathers context from all tools used in a session — git branches, Figma files,
+Confluence pages, and more — and composes a formatted, copy-pasteable Slack message.
+
+- Summarizes git branch work with emoji categories and repo links
+- Includes links to Figma files, Confluence pages, or other artifacts touched
+- Casual, team-friendly tone with scannable bullet points

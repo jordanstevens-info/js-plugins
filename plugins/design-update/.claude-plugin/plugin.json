@@ -1,0 +1,9 @@
+{
+  "name": "design-update",
+  "description": "Compose Slack update messages summarizing work done across tools (git, Figma, Confluence, etc.) for team visibility",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jordan Stevens"
+  },
+  "keywords": ["update", "slack", "team", "communication", "branch", "handoff"]
+}

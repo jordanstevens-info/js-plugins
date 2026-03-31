@@ -11,6 +11,11 @@
       "name": "design-kit",
       "source": "./plugins/design-kit",
       "description": "Live canvas for multi-viewport design review and knowledge infrastructure bootstrapping for projects"
+    },
+    {
+      "name": "design-update",
+      "source": "./plugins/design-update",
+      "description": "Compose Slack update messages summarizing work done across tools for team visibility"
     }
   ]
 }

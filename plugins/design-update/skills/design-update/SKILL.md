@@ -80,6 +80,7 @@ tools and no single prefix fits, default to `:memo: Update`.
 | `refactor/` | `:recycle:` | Refactor |
 | `chore/` | `:broom:` | Chore |
 | `docs/` | `:books:` | Docs |
+| `plugin/` | `:claude:` | Plugin Dev |
 | *(no prefix / unknown)* | `:memo:` | Update |
 
 ---
@@ -87,7 +88,7 @@ tools and no single prefix fits, default to `:memo: Update`.
 ## Message Format
 
 ```
-**:<emoji>: <Category> Update - <Feature Name>**
+**:<emoji>: <Category> - <Feature Name>**
 
 **Notes**
 - <bullet 1>

@@ -8,9 +8,9 @@ decisions. Update when new patterns are established.
 ## Branching
 
 - `[primary-branch]` is a **protected branch** — never commit directly to it
-- All work happens on feature branches; changes arrive via PR/MR merge only
+- All work happens on feature branches; changes arrive via merge only
 - Do not force-push to the primary branch
-- Branch naming: `feat/<desc>`, `fix/<desc>`, `refactor/<desc>`, `chore/<desc>`
+- Branch naming: `design/<desc>`, `feat/<desc>`, `fix/<desc>`, `refactor/<desc>`, `chore/<desc>`
 - Keep branches short-lived — one milestone or logical unit per branch
 
 ## Package Management
@@ -21,10 +21,10 @@ decisions. Update when new patterns are established.
 
 ## Documentation Updates
 
-- **`log.md`** — update after every task (decisions, gotchas, deferred work)
+- **`.design/changes/`** — write a dated entry after every task (decisions, gotchas, deferred work)
 - **`standards.md`** — update when new durable standards are established
-- **`CLAUDE.md`** — update only when repo layout, commands, or stack change
-- **`architecture.md`** — update when structure, phases, or key decisions change
+- **`.design/CLAUDE.md`** — update only when knowledge source routing changes
+- **`.design/knowledge/design-system.md`** — update when tokens, components, or conventions change
 
 ## [Additional Sections]
 
@@ -38,5 +38,7 @@ develop over time:]
 [- API design conventions]
 [- Commit message format]
 [- Code review expectations]
+[- Design token naming conventions]
+[- Component file structure]
 
 [Remove these bracketed hints once real standards are established.]

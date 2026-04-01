@@ -8,9 +8,14 @@
   },
   "plugins": [
     {
-      "name": "design-kit",
-      "source": "./plugins/design-kit",
-      "description": "Live canvas for multi-viewport design review and knowledge infrastructure bootstrapping for projects"
+      "name": "design-engineer",
+      "source": "./plugins/design-engineer",
+      "description": "Cross-repo design engineering workflow with .design/ context bootstrapping, Figma-to-code, design tokens, visual QA, and accessibility"
+    },
+    {
+      "name": "live-canvas",
+      "source": "./plugins/live-canvas",
+      "description": "Infinite canvas with live iframe artboards for multi-viewport design review, branch comparison, and design token tuning"
     },
     {
       "name": "design-update",

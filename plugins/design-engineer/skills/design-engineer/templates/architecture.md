@@ -48,8 +48,7 @@ evolves.]
 ## Phases / Milestones
 
 [If the project has phases, list them here with current state marked. If no
-phases exist yet, keep a single row for the current milestone. The `dev` skill
-references this table to determine what phase to work in.]
+phases exist yet, keep a single row for the current milestone.]
 
 | Phase | Name | Status |
 |-------|------|--------|

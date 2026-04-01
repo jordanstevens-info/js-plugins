@@ -1,0 +1,9 @@
+{
+  "name": "design-engineer",
+  "description": "Cross-repo design engineering workflow with .design/ context bootstrapping, Figma-to-code, design tokens, visual QA, and accessibility",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jordan Stevens"
+  },
+  "keywords": ["design", "engineering", "figma", "tokens", "accessibility", "visual-qa", "bootstrap"]
+}

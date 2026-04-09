@@ -21,7 +21,6 @@ Cross-repo design engineering workflow that bootstraps a `.design/` context dire
 - **design-to-backlog** — Convert design artifacts (branches, Figma files, Confluence specs) into grooming-ready Jira tickets with outcome-focused acceptance criteria
 - **design-to-mr** — Cut a clean merge request branch from a design branch with scoped file selection, MR description drafting, and pre-filled MR links
 - **design-update** — Compose copy-pasteable Slack updates summarizing session work across git, Figma, Confluence, and other tools
-- **ux-copywriting** — Write, review, and brainstorm UI text following FGT UX Copy Guidelines with tone modulation, scoring rubrics, and app-specific spot checks
 
 ### live-canvas
 

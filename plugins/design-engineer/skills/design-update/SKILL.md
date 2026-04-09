@@ -153,8 +153,9 @@ parentheses and include a Ticket link. Omit both if no ticket exists.
 
 ## Output Rule
 
-Present the composed message in a **single fenced code block** with no prose before
-it, so it is immediately copy-pasteable.
+Present the composed message **inline** with no prose before it — no fenced code
+block, no wrapping. Output the formatted message directly so the user can read,
+edit, and copy it as-is.
 
 Never send the message via Slack MCP, messaging APIs, or any auto-publish mechanism.
 The user has final authorship — they review, edit, and decide when to share.

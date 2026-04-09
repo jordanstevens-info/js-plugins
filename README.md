@@ -13,14 +13,15 @@ claude plugin install design-engineer@js-plugins
 
 ### design-engineer
 
-Cross-repo design engineering workflow that bootstraps a `.design/` context directory on a dedicated `design/` branch. Handles the full lifecycle from project detection through implementation to verification.
+Cross-repo design engineering workflow that bootstraps a `.design/` context directory on a dedicated `design/` branch. Handles the full lifecycle from project detection through implementation, delivery, and team communication.
 
-- Bootstraps `.design/` with knowledge files (vision, architecture, standards, design system)
-- Figma-to-code implementation with visual QA and accessibility checks
-- Design token compliance — flags hardcoded values, uses existing tokens
-- Responsive layout verification across breakpoints
-- Structured verification checklists before committing
-- Session change logs in `.design/changes/`
+**Skills:**
+
+- **design-engineer** — Figma-to-code implementation with visual QA, accessibility checks, design token compliance, responsive layout verification, and structured changelogs in `.design/changelog/`
+- **design-to-backlog** — Convert design artifacts (branches, Figma files, Confluence specs) into grooming-ready Jira tickets with outcome-focused acceptance criteria
+- **design-to-mr** — Cut a clean merge request branch from a design branch with scoped file selection, MR description drafting, and pre-filled MR links
+- **design-update** — Compose copy-pasteable Slack updates summarizing session work across git, Figma, Confluence, and other tools
+- **ux-copywriting** — Write, review, and brainstorm UI text following FGT UX Copy Guidelines with tone modulation, scoring rubrics, and app-specific spot checks
 
 ### live-canvas
 
@@ -34,13 +35,3 @@ An infinite canvas with live iframe artboards of your running dev server at mult
 - Annotate with sticky notes and callout markers
 - Tweak design tokens (colors, spacing, typography) with live hot-reload
 - Embed local files (images, video, audio, code) alongside live artboards
-
-### design-update
-
-Compose Slack update messages summarizing work done across tools for team visibility.
-
-#### `/design-update`
-
-- Summarizes git branch work with emoji categories and repo links
-- Includes links to Figma files, Confluence pages, or other artifacts touched
-- Casual, team-friendly tone with scannable bullet points

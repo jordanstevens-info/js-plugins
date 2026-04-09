@@ -14,222 +14,219 @@ description: >-
 
 # Design Engineering Workflow
 
-Move design work forward in small, safe steps on a `design/` branch. This skill
-bootstraps a `.design/` context directory on each repo so it has the knowledge it
-needs — regardless of whether the repo has existing documentation. All templates
-are bundled in `templates/`.
+Implement designs on a `design/` branch. Bootstrap `.design/` for portable
+context per repo.
 
-## Working Style
+## Shortcuts
 
-- Prefer the smallest useful increment
-- Reuse existing repo conventions, components, and tokens
-- Keep new work isolated on a `design/` branch
-- Avoid broad refactors unless they directly unblock the current step
-- Leave clear extension points instead of building future phases early
+| Trigger | Action |
+|---------|--------|
+| Start, Preflight, Prime | `references/bootstrap.md` (if needed) + steps 1-2, report readiness |
+| Checkpoint | Verify build + lint pass → commit + changelog entry + update Current State, keep working |
+| Design Review, Design QA | Step 5 only: verification checklist |
+| Status | Read changelog + README, `git status`, check main divergence, report |
+| Shutdown, Wrap-Up, Finish, Retro | Run Shutdown Procedure, report against Exit Criteria |
 
-## Trigger Shortcuts
+## Branching
 
-- **Preflight, Prime** — Run bootstrap (if needed) + steps 1–2, report readiness
-- **Checkpoint** — Commit current work + write `.design/changes/` entry, keep working
-- **Design Review, Design QA** — Run steps 5–6 only: visual QA, accessibility, token compliance, verification checklist
-- **Status** — Read `.design/changes/` and `.design/CLAUDE.md`, report what's done and what's pending
-- **Shutdown, Wrap-Up, Finish, Retro** — Commit, push, update change log, step 7, report doneness
+1. Create `design/<feature-name>` from primary branch
+2. All work on this branch — NEVER commit to primary branch directly
+3. Subagents MUST use `isolation: "worktree"`
+
+## Scope Boundary
+
+This skill ends at commit and push. NEVER:
+- Create PRs, MRs, or merge requests
+- Suggest creating PRs, MRs, or merge requests
+- Suggest backlog tickets or next steps beyond the current task
+- Reference MR/PR workflows in output
+
+The user initiates downstream skills (`design-to-mr`, `design-to-backlog`,
+`design-update`) separately when ready.
+
+## Principles
+
+- `.design/` is branch-scoped portable context — it travels with the branch
+- Build clean — use spikes as reference, do not migrate spike code forward
+- Do not duplicate product-thinking docs inside implementation files
+- Visual fidelity and accessibility are exit gates, not polish steps
 
 ## Workflow
 
-If `.design/` does not exist, run the **Bootstrap** section (bottom of this file)
-before starting step 1. If `.design/` already exists, read `.design/CLAUDE.md` to
-re-prime and begin at step 1.
+If `.design/` does not exist: run `references/bootstrap.md` first.
+If `.design/` exists: run migration check, read `.design/README.md`, start at step 1.
 
-### 1. Inspect Before Changing
+**Migration** — rename silently if old conventions found:
 
-Read before writing. Locate existing patterns, components, and tokens before adding
-new ones.
+| Old | New |
+|-----|-----|
+| `.design/CLAUDE.md` | `.design/README.md` |
+| `.design/changes/` | `.design/changelog/` |
 
-- Read knowledge sources via routing in `.design/CLAUDE.md`
-- Read `.design/changes/` for prior session context on this branch
-- Locate existing components, design tokens, and conventions in the repo
-- If Figma MCP is available, inspect the relevant file or frame before coding
+Use `git mv`. Log in next changelog entry.
 
-### 2. Know Your Scope
+### 1. Inspect
 
-Check the current phase or milestone in architecture docs (repo's own or
-`.design/knowledge/`). Check latest status in `.design/changes/`.
+- Read `.design/README.md` for knowledge routing
+- Read `.design/changelog/` for prior session context
+- Locate existing components, tokens, conventions
+- If Figma MCP available: inspect target file/frame before coding
 
-Confirm what is in scope for this design branch. Do not pull work from future
-phases unless it is trivially small and directly unblocking.
+### 2. Scope
 
-### 3. Pick the Smallest Landing Zone
+- Check phase/milestone in architecture docs or `.design/knowledge/`
+- Check latest status in `.design/changelog/`
+- Confirm what is in scope for this branch
+- Do NOT pull future-phase work unless trivially small and directly unblocking
 
-Prefer existing modules and files if the work fits there. For design work: prefer
-extending existing components over creating new ones.
+**On Status shortcut**, also run:
+```bash
+git status
+git fetch origin && git rev-list HEAD..origin/main --count
+```
+If main is ahead: report count, flag rebase may be needed. Do NOT rebase automatically.
 
-Only create new structure when the architecture calls for it and the current scope
-requires it. Use `.design/tmp/` for exploratory work that isn't ready for the repo
-proper.
+### 3. Landing Zone
 
-### 4. Start from the Source-of-Truth Layer
+- Prefer existing modules/files over new ones
+- Prefer extending existing components over creating new ones
+- Only create new structure when architecture requires it and scope demands it
+- Use `.design/artifacts/` for prototypes, spikes, and exploratory work worth keeping
+- Use `.design/tmp/` for throwaway scratch files only (gitignored)
 
-Work from the bottom of the design dependency stack upward:
+### 4. Source-of-Truth Layer
 
-1. **Design tokens** — colors, spacing, typography, elevation, motion
-2. **Base / primitive components** — buttons, inputs, icons, badges
-3. **Composed components** — cards, forms, navigation, modals
-4. **Page layouts / views** — full pages assembled from composed components
+Work bottom-up through the design dependency stack:
 
-If tokens exist in the repo, use them. Never hardcode raw color, spacing, or font
-values when a token exists. If a token doesn't exist for a needed value, flag it
-and document in `.design/artifacts/` — do not silently hardcode.
+1. Design tokens (colors, spacing, typography, elevation, motion)
+2. Base/primitive components (buttons, inputs, icons, badges)
+3. Composed components (cards, forms, navigation, modals)
+4. Page layouts/views
 
-### 5. Verify Before Stopping
+NEVER hardcode raw color, spacing, or font values when a token exists.
+If a needed token is missing: flag it, document in `.design/artifacts/`.
 
-- Verify visual match against the Figma spec (spacing, color, typography, alignment)
-- Test responsive behavior at key breakpoints
-- Verify accessibility basics: contrast ratio, focus order, semantic HTML, ARIA
-- Test dark mode / theme variants if applicable
-- Verify component isolation (works standalone, not dependent on page context)
-- Run the build/test command (see repo `CLAUDE.md` or `.design/CLAUDE.md` for commands)
+### 5. Verify and Document
 
-### 6. Present Verification Checklist
+**Verify** against design spec:
+- Visual match: spacing, color, typography, alignment
+- Responsive: key breakpoints
+- Accessibility: contrast, focus order, semantic HTML, ARIA
+- Dark mode / theme variants (if applicable)
+- Component isolation: works standalone
+- Build/test passes (see `.design/README.md` for commands)
 
-After completing a task and before committing, output a numbered verification
-checklist. For each step, include:
+**Output a numbered verification checklist.** Each item: exact command or action
+(copy-pasteable) + expected outcome. No prose. Tailor to: browser inspection,
+DevTools token checks, keyboard nav, Figma overlay.
 
-- The exact command to run or action to take (copy-pasteable)
-- What to expect (expected output, visual result, or behavior)
+**Write changelog entry** — dated, in `.design/changelog/` (see
+`templates/changelog-entry.md`):
+- Files, components, routes touched
+- What changed
+- What was deferred
+- External references (Jira, Figma, Confluence) — downstream skills read these
 
-Tailor to design work:
+**Graduate durable patterns.** Ask: "Would a future agent or developer on a
+different branch benefit from this?" If yes, promote:
+- `design-system.md` — component patterns, token conventions, icon strategies
+- `standards.md` — process decisions, tooling conventions
 
-- Browser inspection steps (specific viewports, interactions, hover/focus states)
-- DevTools checks (computed styles match tokens, no hardcoded values in output)
-- Accessibility audit steps (keyboard navigation, screen reader, contrast check)
-- Figma overlay comparison if relevant
+Graduate: "Use FgtTooltip over Flowbite Tooltip", "Inline SVGs for Heroicons
+due to TS7016", "Commit format: type(scope): description".
+Do NOT graduate: one-time design choices, implementation details, session preferences.
 
-Keep it concise — no prose, just steps and expected outcomes.
+**Update Current State** in `.design/README.md` on Checkpoint and Shutdown.
+Cumulative 1-3 line summary of total branch progress. Replace, do not append.
 
-### 7. Document the Delta
+Update `.design/knowledge/` if new durable patterns established.
+Save artifacts to `.design/artifacts/`.
+NEVER remove from `.design/tmp/` without user confirmation.
 
-Write a dated entry in `.design/changes/` covering:
+## Rules
 
-- Where the work lives (files, components, routes)
-- What was added or changed
-- What was intentionally deferred
-
-Update `.design/knowledge/` files if new durable patterns were established (new
-tokens, new component conventions, new naming patterns).
-
-Save relevant artifacts (specs, screenshots, token maps) to `.design/artifacts/`.
-
-Ask the user before removing anything from `.design/tmp/` — never delete without
-confirmation.
-
-## Guardrails
-
-Do not, unless the task explicitly calls for it:
-
-- Refactor the whole project
-- Add complexity from future phases
-- Introduce dependencies not already in the project without discussing first
-- Change the primary branch directly
+NEVER do these unless the task explicitly requires it:
+- Refactor broadly or add future-phase complexity
+- Introduce new dependencies without discussion
+- Commit to primary branch
 - Remove existing tests or checks
-- Deviate from Figma specs without flagging to the user
-- Introduce raw color, spacing, or font values — use design tokens
+- Deviate from Figma specs without flagging
+- Hardcode raw color/spacing/font values — use tokens
 - Override component library defaults without justification
 - Skip accessibility verification
 - Commit `.design/tmp/` contents
-- Create empty directories — create `changes/`, `artifacts/`, `tmp/` on first use
-- Create PRs/MRs or suggest creating them — commit and push only
-- Suggest next steps related to PRs, MRs, or code review workflows
+- Create empty directories — create `changelog/`, `artifacts/`, `tmp/` on first use
+- Leave dead code, commented-out blocks, or unused imports behind — when new code replaces old code, remove the old code completely
+- Rewrite a file from scratch — prefer targeted edits. Never rewrite a full file without flagging it first.
+- Fix, refactor, or improve code you encounter unless it is blocking the current task
+- Create a new function, type, or utility without searching the repo first — if it exists, use it
 
-## Decision Rules
+**Commit sizing:** prefer small commits scoped to a single logical change. Use the Checkpoint shortcut to commit incrementally during the session — this protects work if the session is interrupted. Squash-on-merge handles the clean history.
 
-- If the repo already has a working pattern, adapt it before inventing a new one
-- If a change touches existing production code, choose the least invasive path
-- If a feature can be deferred without blocking the current scope, defer it
-- If there are two valid paths, choose the one that preserves optionality
-- If uncertain about direction, consult the knowledge sources in `.design/CLAUDE.md`
-- If uncertain about visual intent, consult Figma (via MCP if available) before guessing
-- If a design token doesn't exist for a needed value, flag it rather than hardcoding
-- If a component exists in the library, extend or compose it rather than building from scratch
-- If the repo has existing knowledge files, reference them — don't duplicate into `.design/knowledge/`
+**Reading strategy:** understand file structure before reading implementations. Do not rely on a single linear pass — ensure you have full understanding of the file regardless of length.
 
-## Core Principles
+**Build early, build often:** run the build after any structural change. Do not stack work on broken code.
 
-- Prefer deterministic generation and easy-to-read output
-- Do not duplicate product-thinking docs inside implementation files
-- Build clean — use existing spikes as reference, do not migrate code forward
-- Prefer the simplest orchestration that works; add complexity only when needed
-- Visual fidelity to the design spec is a first-class requirement, not a polish step
-- Accessibility is built in from the start, not bolted on after
-- `.design/` is the skill's portable context — it travels with the branch
+**No commit without green build:** run the project's build and lint commands (see `.design/README.md`) and confirm they pass BEFORE every commit — Checkpoint or Shutdown. This is a hard gate: if build or lint fails, fix first, then commit.
+
+**Code volume check:** if you are adding significantly more lines than you are removing, stop and question the approach. Prefer reusing and extending existing code over writing net-new code. High line counts usually signal duplication, over-engineering, or failure to remove what was replaced.
+
+**Decision rules:**
+- Repo has a pattern → adapt it, do not invent a new one
+- Change touches production code → least invasive path
+- Feature can be deferred without blocking scope → defer
+- Two valid paths → choose the one that preserves optionality
+- Uncertain about direction → consult `.design/README.md` knowledge sources
+- Uncertain about visual intent → consult Figma before guessing
+- Token missing → flag, do not hardcode
+- Component exists in library → extend/compose, do not rebuild
+- Repo has knowledge files → reference them, do not duplicate into `.design/knowledge/`
+- Search the repo before creating anything new — functions, types, utilities, components
+
+## Shutdown Procedure
+
+### Phase 1 — Verify (loop until green)
+
+Run ALL of these checks. If ANY fail, fix and re-run ALL from the top.
+Do NOT proceed to Phase 2 until every check passes.
+
+1. **Build** — run the project's build command. MUST pass.
+2. **Lint** — run the project's lint command. MUST pass.
+3. **Visual match** — spacing, color, typography, alignment vs design spec
+4. **Responsive** — key breakpoints
+5. **Accessibility** — contrast, focus order, semantic HTML, ARIA
+6. **Component isolation** — works standalone
+7. **No dead code** — no commented-out blocks, unused imports, or leftover spike code
+
+Output a numbered pass/fail checklist. On ANY failure: fix, then restart from check 1.
+
+### Phase 2 — Document (once, after Phase 1 is green)
+
+8. **Changelog** — write dated `.design/changelog/` entry (changed, deferred, references)
+9. **Graduate** — promote durable patterns to `design-system.md` or `standards.md`
+10. **Current State** — replace `## Current State` in `.design/README.md` with cumulative summary
+
+### Phase 3 — Ship (once, after Phase 2)
+
+11. **Commit** — stage and commit with descriptive message
+12. **Push** — if a git remote exists, push design branch to remote; otherwise skip silently
+13. **Report** — show `git diff main..HEAD` for full session overview, then report doneness against each Exit Criteria item; flag unsatisfied items
 
 ## Exit Criteria
 
-Stop when:
+ALL must be true:
 
-- The requested workflow works end to end
-- The change is scoped and understandable
-- Visual output matches the design spec
-- Accessibility basics pass
-- The next step is clearer than before
+1. Requested work functions end to end
+2. Change is scoped — no unrelated modifications
+3. Visual output matches design spec (spacing, color, typography, alignment)
+4. Accessibility basics pass (contrast, focus order, semantic HTML, ARIA)
+5. `.design/changelog/` entry documents changes and deferrals
+6. `## Current State` in `.design/README.md` reflects cumulative branch progress
+7. Durable patterns graduated to knowledge files where appropriate
+8. Next step is clearer than before
 
----
+Items 3 and 4 are hard gates. Do not mark work done until verified.
 
-## Bootstrap
+## References
 
-Run once per repo when `.design/` does not yet exist. Triggered automatically on
-first use or via "Preflight" / "Prime".
-
-### Branch
-
-1. Create a `design/<feature-name>` branch from the primary branch
-2. Do all work on this branch
-3. When spawning subagents for implementation, always use `isolation: "worktree"`
-   so each agent gets its own isolated copy and branch
-
-### Detect
-
-Run silently before asking questions. Scan for:
-
-- Language/runtime (manifest files: `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, etc.)
-- Package manager (lockfiles: `pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`, etc.)
-- Monorepo signals (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, workspaces config)
-- Git state (primary branch, recent commits, remote URL)
-- Existing infrastructure: `CLAUDE.md`, `knowledge/`, `docs/`, `doc/`,
-  `CONTRIBUTING.md`, `ARCHITECTURE.md`, `README.md`, `.github/`
-- Design system files: token definitions, component libraries, theme configs
-
-### Create `.design/`
-
-Resolve knowledge sources in priority order:
-
-1. **Repo's own `CLAUDE.md`** — if it points to knowledge/context files, reference those
-2. **Repo's existing docs** — scan `knowledge/`, `docs/`, `doc/`, `CONTRIBUTING.md`,
-   `ARCHITECTURE.md`, `README.md`, or any path referenced in `CLAUDE.md`
-3. **Buttress with `.design/knowledge/`** — for anything the repo doesn't provide,
-   create from bundled `templates/` (vision.md, architecture.md, standards.md, log.md)
-4. **Standalone fallback** — if the repo has nothing, create the full knowledge set
-   in `.design/knowledge/` using all bundled templates
-
-Then:
-
-- Create `.design/CLAUDE.md` from `templates/CLAUDE.md` — document which sources
-  were found (and where) vs. created
-- Create `.design/knowledge/design-system.md` from `templates/design-system.md` —
-  populate with tokens, components, and conventions discovered during detection
-
-Do NOT create empty directories. Create `changes/`, `artifacts/`, and `tmp/` only
-when there is content to put in them.
-
-### Interview (only if no existing knowledge)
-
-If the repo has no `CLAUDE.md`, no `knowledge/` directory, and no meaningful docs,
-ask in a single prompt:
-
-1. What is this project? (one-liner)
-2. What problem does it solve and who is it for?
-3. Current state? (POC / MVP / production / maintenance / greenfield)
-4. What's the next milestone?
-5. What's explicitly out of scope?
-
-If repo already has knowledge files, skip the interview — read what exists.
+- `references/bootstrap.md` — one-time repo setup: branch, detection, `.design/` creation, interview

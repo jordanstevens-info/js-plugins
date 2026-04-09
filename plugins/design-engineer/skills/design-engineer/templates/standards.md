@@ -21,10 +21,21 @@ decisions. Update when new patterns are established.
 
 ## Documentation Updates
 
-- **`.design/changes/`** — write a dated entry after every task (decisions, gotchas, deferred work)
+- **`.design/changelog/`** — write a dated entry after every session (see `templates/changelog-entry.md`)
 - **`standards.md`** — update when new durable standards are established
-- **`.design/CLAUDE.md`** — update only when knowledge source routing changes
+- **`.design/README.md`** — update only when knowledge source routing changes
 - **`.design/knowledge/design-system.md`** — update when tokens, components, or conventions change
+
+## Design Decisions
+
+Durable design decisions graduated from session changelogs. These persist across
+branches and inform future work.
+
+[Decisions are added here as they emerge from design work. Examples:]
+[- "Use DS Tooltip over Flowbite Tooltip for all new tooltip usage"]
+[- "Inline SVGs for icons when type declarations are missing"]
+
+[Remove these bracketed hints once real decisions are established.]
 
 ## [Additional Sections]
 

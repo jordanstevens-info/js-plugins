@@ -1,5 +1,5 @@
 {
-  "name": "caveman",
+  "name": "caveman-output-style",
   "description": "Ultra-compressed communication mode — cuts output tokens while keeping full technical accuracy. Multiple intensity levels.",
   "version": "1.0.0",
   "author": {

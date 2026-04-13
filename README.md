@@ -34,3 +34,21 @@ An infinite canvas with live iframe artboards of your running dev server at mult
 - Annotate with sticky notes and callout markers
 - Tweak design tokens (colors, spacing, typography) with live hot-reload
 - Embed local files (images, video, audio, code) alongside live artboards
+
+### caveman-output-style
+
+Ultra-compressed communication mode — cuts output tokens while keeping full technical accuracy. Ships as output styles selectable via `/config` → Output style.
+
+**Levels:**
+
+| Level | What it does |
+|-------|-------------|
+| **Caveman Lite** | No filler/hedging. Keep articles + full sentences. Professional but tight |
+| **Caveman** | Drop articles, fragments OK, short synonyms. Classic caveman |
+| **Caveman Ultra** | Abbreviate (DB/auth/config/req/res/fn/impl), strip conjunctions, arrows for causality (X → Y), one word when one word enough |
+
+```shell
+claude plugin install caveman-output-style@js-plugins
+```
+
+Select a level via `/config` → Output style. Always-on once selected — no skill invocation needed. Switch to Default to turn off.

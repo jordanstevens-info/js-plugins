@@ -1,0 +1,9 @@
+{
+  "name": "caveman",
+  "description": "Ultra-compressed communication mode — cuts output tokens while keeping full technical accuracy. Multiple intensity levels.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jordan Stevens"
+  },
+  "keywords": ["productivity", "brevity", "tokens", "communication"]
+}

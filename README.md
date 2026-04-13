@@ -37,7 +37,7 @@ An infinite canvas with live iframe artboards of your running dev server at mult
 
 ### caveman-output-style
 
-Ultra-compressed communication mode — cuts output tokens while keeping full technical accuracy. Ships as output styles selectable via `/config` → Output style.
+Ultra-compressed communication mode based on [caveman](https://github.com/JuliusBrussee/caveman) — cuts output tokens while keeping full technical accuracy. Ships as output styles selectable via `/config` → Output style.
 
 **Levels:**
 
